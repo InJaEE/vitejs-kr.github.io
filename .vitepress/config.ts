@@ -1,9 +1,11 @@
 import { defineConfig } from 'vitepress'
+import markdownItCustomAnchor from './markdown-it-custom-anchor'
+import renderPermalink from './render-permalink'
 
 const ogDescription = 'Vite, 차세대 프런트엔드 개발 툴'
-const ogImage = 'https://vitejs-kr.github.io/og-image.png'
+const ogImage = 'https://ko.vitejs.dev/og-image.png'
 const ogTitle = 'Vite'
-const ogUrl = 'https://vitejs-kr.github.io'
+const ogUrl = 'https://ko.vitejs.dev'
 
 export default defineConfig({
   title: 'Vite',
@@ -22,32 +24,37 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#646cff' }],
     [
       'script',
-      { src: 'https://www.googletagmanager.com/gtag/js?id=G-V8ZS1G7X21' }
+      { src: 'https://www.googletagmanager.com/gtag/js?id=G-V8ZS1G7X21' },
     ],
     [
       'script',
       {},
-      `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-V8ZS1G7X21');`
-    ]
+      `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-V8ZS1G7X21');`,
+    ],
   ],
 
-  vue: {
-    reactivityTransform: true
+  locales: {
+    root: { label: '한국어' },
+    en: { label: 'English', link: 'https://vitejs.dev' },
+    zh: { label: '简体中文', link: 'https://cn.vitejs.dev' },
+    ja: { label: '日本語', link: 'https://ja.vitejs.dev' },
+    es: { label: 'Español', link: 'https://es.vitejs.dev' },
+    pt: { label: 'Português', link: 'https://pt.vitejs.dev' },
   },
 
   themeConfig: {
     logo: '/logo.svg',
 
     editLink: {
-      pattern:
-        'https://github.com/vitejs-kr/vitejs-kr.github.io/edit/main/:path',
-      text: '이 페이지 수정하기'
+      pattern: 'https://github.com/vitejs/docs-ko/edit/main/:path',
+      text: '이 페이지 수정하기',
     },
 
     socialLinks: [
+      { icon: 'mastodon', link: 'https://elk.zone/m.webtoo.ls/@vite' },
       { icon: 'twitter', link: 'https://twitter.com/vite_js' },
       { icon: 'discord', link: 'https://chat.vitejs.dev' },
-      { icon: 'github', link: 'https://github.com/vitejs/vite' }
+      { icon: 'github', link: 'https://github.com/vitejs/vite' },
     ],
 
     algolia: {
@@ -55,28 +62,18 @@ export default defineConfig({
       apiKey: 'deaab78bcdfe96b599497d25acc6460e',
       indexName: 'vitejs',
       searchParameters: {
-        facetFilters: ['tags:en']
-      }
+        facetFilters: ['tags:en'],
+      },
     },
 
     carbonAds: {
       code: 'CEBIEK3N',
-      placement: 'vitejsdev'
-    },
-
-    localeLinks: {
-      text: '한국어',
-      items: [
-        { text: 'English', link: 'https://vitejs.dev' },
-        { text: '简体中文', link: 'https://cn.vitejs.dev' },
-        { text: '日本語', link: 'https://ja.vitejs.dev' },
-        { text: 'Español', link: 'https://es.vitejs.dev' }
-      ]
+      placement: 'vitejsdev',
     },
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2019-present Evan You & Vite Contributors'
+      copyright: 'Copyright © 2019-present Evan You & Vite Contributors',
     },
 
     nav: [
@@ -86,37 +83,38 @@ export default defineConfig({
       {
         text: '리소스',
         items: [
-          { text: 'Team', link: '/team' },
+          { text: 'Vite 팀', link: '/team' },
+          { text: '릴리스', link: '/releases' },
           {
             items: [
               {
                 text: '트위터',
-                link: 'https://twitter.com/vite_js'
+                link: 'https://twitter.com/vite_js',
               },
               {
                 text: '디스코드',
-                link: 'https://chat.vitejs.dev'
+                link: 'https://chat.vitejs.dev',
               },
               {
                 text: 'Awesome Vite',
-                link: 'https://github.com/vitejs/awesome-vite'
+                link: 'https://github.com/vitejs/awesome-vite',
               },
               {
                 text: '개발 커뮤니티',
-                link: 'https://dev.to/t/vite'
+                link: 'https://dev.to/t/vite',
               },
               {
                 text: '호환 가능한 Rollup 플러그인',
-                link: 'https://vite-rollup-plugins.patak.dev/'
+                link: 'https://vite-rollup-plugins.patak.dev/',
               },
               {
                 text: '변경 사항',
-                link: 'https://github.com/vitejs/vite/blob/main/packages/vite/CHANGELOG.md'
-              }
-            ]
-          }
-        ]
-      }
+                link: 'https://github.com/vitejs/vite/blob/main/packages/vite/CHANGELOG.md',
+              },
+            ],
+          },
+        ],
+      },
     ],
 
     sidebar: {
@@ -126,87 +124,95 @@ export default defineConfig({
           items: [
             {
               text: 'Vite를 사용해야 하는 이유',
-              link: '/guide/why'
+              link: '/guide/why',
             },
             {
               text: '시작하기',
-              link: '/guide/'
+              link: '/guide/',
             },
             {
               text: '지원하는 기능들',
-              link: '/guide/features'
+              link: '/guide/features',
+            },
+            {
+              text: 'CLI',
+              link: '/guide/cli',
             },
             {
               text: '플러그인 사용하기',
-              link: '/guide/using-plugins'
+              link: '/guide/using-plugins',
             },
             {
               text: '사전 번들링 된 디펜던시',
-              link: '/guide/dep-pre-bundling'
+              link: '/guide/dep-pre-bundling',
             },
             {
               text: '에셋 가져오기',
-              link: '/guide/assets'
+              link: '/guide/assets',
             },
             {
               text: '프로덕션 버전으로 빌드하기',
-              link: '/guide/build'
+              link: '/guide/build',
             },
             {
               text: '정적 웹 페이지로 배포하기',
-              link: '/guide/static-deploy'
+              link: '/guide/static-deploy',
             },
             {
               text: 'Vite의 환경 변수와 모드',
-              link: '/guide/env-and-mode'
+              link: '/guide/env-and-mode',
             },
             {
               text: '서버 측 렌더링 (SSR)',
-              link: '/guide/ssr'
+              link: '/guide/ssr',
             },
             {
               text: '백엔드 프레임워크와 함께 사용하기',
-              link: '/guide/backend-integration'
+              link: '/guide/backend-integration',
             },
             {
               text: '다른 빌드 도구와의 차이점',
-              link: '/guide/comparisons'
+              link: '/guide/comparisons',
             },
             {
               text: '트러블슈팅',
-              link: '/guide/troubleshooting'
+              link: '/guide/troubleshooting',
+            },
+            {
+              text: 'v3에서 마이그레이션하기',
+              link: '/guide/migration',
             },
             {
               text: 'v2에서 마이그레이션하기',
-              link: '/guide/migration'
+              link: '/guide/migration-from-v2',
             },
             {
               text: 'v1에서 마이그레이션하기',
-              link: '/guide/migration-from-v1'
-            }
-          ]
+              link: '/guide/migration-from-v1',
+            },
+          ],
         },
         {
           text: 'APIs',
           items: [
             {
               text: '플러그인 API',
-              link: '/guide/api-plugin'
+              link: '/guide/api-plugin',
             },
             {
               text: 'HMR API',
-              link: '/guide/api-hmr'
+              link: '/guide/api-hmr',
             },
             {
               text: 'JavaScript API',
-              link: '/guide/api-javascript'
+              link: '/guide/api-javascript',
             },
             {
               text: 'Vite 설정 레퍼런스',
-              link: '/config/'
-            }
-          ]
-        }
+              link: '/config/',
+            },
+          ],
+        },
       ],
       '/config/': [
         {
@@ -214,46 +220,46 @@ export default defineConfig({
           items: [
             {
               text: 'Vite 설정하기',
-              link: '/config/'
+              link: '/config/',
             },
             {
               text: '공용 옵션',
-              link: '/config/shared-options'
+              link: '/config/shared-options',
             },
             {
               text: '서버 옵션',
-              link: '/config/server-options'
+              link: '/config/server-options',
             },
             {
               text: '빌드 옵션',
-              link: '/config/build-options'
+              link: '/config/build-options',
             },
             {
               text: '프리뷰 옵션',
-              link: '/config/preview-options'
+              link: '/config/preview-options',
             },
             {
               text: '디펜던시 최적화 옵션',
-              link: '/config/dep-optimization-options'
+              link: '/config/dep-optimization-options',
             },
             {
               text: 'SSR 옵션',
-              link: '/config/ssr-options'
+              link: '/config/ssr-options',
             },
             {
               text: '워커 옵션',
-              link: '/config/worker-options'
-            }
-          ]
-        }
-      ]
-    }
+              link: '/config/worker-options',
+            },
+          ],
+        },
+      ],
+    },
   },
   markdown: {
     anchor: {
       // @ts-ignore
-      renderPermalink: require('./render-permalink')
+      renderPermalink,
     },
-    config: (md) => md.use(require('./custom-anchor'))
-  }
+    config: (md) => md.use(markdownItCustomAnchor),
+  },
 })

@@ -34,10 +34,17 @@ export default defineConfig({
 
 :::
 
+::: tip LAN에서 WSL2의 서버에 액세스하기
+
+WSL2에서 Vite를 실행할 때, `host: true`를 설정하는 것만으로는 LAN에서 서버에 접근할 수 없습니다.
+[WSL 문서](https://learn.microsoft.com/en-us/windows/wsl/networking#accessing-a-wsl-2-distribution-from-your-local-area-network-lan)를 참고하세요.
+
+:::
+
 ## server.port {#server-port}
 
 - **타입:** `number`
-- **기본값**: `5173`
+- **기본값:** `5173`
 
 서버 포트를 지정합니다. 포트가 이미 사용 중이라면, Vite는 자동으로 사용 가능한 다음 포트를 시도할 것이므로, 결과적으로 이 포트 번호가 서버의 수신 포트가 되지 않을 수도 있습니다.
 
@@ -61,7 +68,9 @@ TLS + HTTP/2를 사용합니다. [`server.proxy` 옵션](#server-proxy)이 사�
 
 - **타입:** `boolean | string`
 
-서버가 시작될 때 자동으로 브라우저에서 앱을 보여줍니다. 값이 문자열이면 URL의 경로명으로 사용됩니다. 원하는 특정 브라우저에서 열기를 원한다면, `process.env.BROWSER` (예: `firefox`) 환경 변수를 설정할 수 있습니다. 더 자세한 점을 알려면 [`open` 패키지](https://github.com/sindresorhus/open#app)를 확인하세요.
+서버가 시작될 때 자동으로 브라우저에서 앱을 보여줍니다. 값이 문자열이면 URL의 경로명으로 사용됩니다. 원하는 특정 브라우저에서 열기를 원한다면, `process.env.BROWSER` (예: `firefox`) 환경 변수를 설정할 수 있습니다. `process.env.BROWSER_ARGS` 환경 변수를 통해 추가적인 인자를 전달할 수도 있습니다. (예: `--incognito`)
+
+추가로 이 `BROWSER`와 `BROWSER_ARGS`는 `.env` 파일에서 설정이 가능합니다. 자세한 내용은 [`open` 패키지 문서](https://github.com/sindresorhus/open#app)를 참고해주세요.
 
 **예제:**
 
@@ -77,9 +86,11 @@ export default defineConfig({
 
 - **타입:** `Record<string, string | ProxyOptions>`
 
-개발 서버를 위한 사용자 지정 프록시 규칙을 설정합니다. `{ key: options }` 페어의 객체 형식입니다. 키가 `^`로 시작하면, `RegExp`로 해석됩니다. `configure` 옵션을 사용하여 프록시 인스턴스에 접근할 수 있습니다.
+개발 서버에 대한 사용자 정의 프락시 규칙을 구성합니다. `{ key: options }` 쌍의 객체를 기대합니다. 요청 경로가 해당 키로 시작하는 모든 요청은 해당 지정 대상으로 프락시됩니다. 키가 `^`로 시작하면 `RegExp`로 해석됩니다. `configure` 옵션은 프락시 인스턴스에 액세스하는 데 사용할 수 있습니다.
 
-[`http-proxy`](https://github.com/http-party/node-http-proxy)를 사용하며, 전체 옵션은 [여기](https://github.com/http-party/node-http-proxy#options)를 확인해주세요.
+참고로 [`base`](/config/shared-options.md#base)가 비상대적(Non-relative)인 경우, 각 키에 `base`를 접두사로 붙여야 합니다.
+
+이는 [`http-proxy`](https://github.com/http-party/node-http-proxy#options)를 확장합니다. 추가 옵션은 [여기](https://github.com/vitejs/vite/blob/main/packages/vite/src/node/server/middlewares/proxy.ts#L13)를 참고해주세요.
 
 특정 상황(예: 서버 내부에서 사용되는 [connect](https://github.com/senchalabs/connect) 앱에 커스텀 미들웨어 추가)에서는 개발 서버를 직접 구성해야 할 수도 있습니다. 이를 위해서는 [플러그인](/guide/using-plugins.html)을 작성하고, [configureServer](/guide/api-plugin.html#configureserver) 훅을 이용해야 합니다. 자세한 것은 각 문서를 참고해주세요.
 
@@ -89,21 +100,21 @@ export default defineConfig({
 export default defineConfig({
   server: {
     proxy: {
-      // 문자열만
+      // 문자열만: http://localhost:5173/foo -> http://localhost:4567/foo
       '/foo': 'http://localhost:4567',
-      // 옵션과 함께
+      // 옵션과 함께: http://localhost:5173/api/bar-> http://jsonplaceholder.typicode.com/bar
       '/api': {
         target: 'http://jsonplaceholder.typicode.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
-      // 정규식(RegEx)과 함께
+      // 정규식(RegEx)과 함께: http://localhost:5173/fallback/ -> http://jsonplaceholder.typicode.com/
       '^/fallback/.*': {
         target: 'http://jsonplaceholder.typicode.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/fallback/, '')
       },
-      // 프록시 인스턴스 사용
+      // 프락시 인스턴스 사용
       '/api': {
         target: 'http://jsonplaceholder.typicode.com',
         changeOrigin: true,
@@ -111,9 +122,9 @@ export default defineConfig({
           // proxy 변수에는 'http-proxy'의 인스턴스가 전달됩니다
         }
       },
-      // 웹소켓 또는 socket.io 프록시
+      // 웹소켓 또는 socket.io 프락시: ws://localhost:5173/socket.io -> ws://localhost:5174/socket.io
       '/socket.io': {
-        target: 'ws://localhost:5173',
+        target: 'ws://localhost:5174',
         ws: true
       }
     }
@@ -125,7 +136,7 @@ export default defineConfig({
 
 - **타입:** `boolean | CorsOptions`
 
-개발 서버를 위한 CORS를 설정합니다. 이것은 기본적으로 활성화되어 있으며 모든 오리진을 허용합니다. 동작을 상세하게 조절하기 위해 [옵션 객체](https://github.com/expressjs/cors)를 전달하거나, 사용하지 않기 위해 `false`를 전달하세요.
+개발 서버를 위한 CORS를 설정합니다. 이것은 기본적으로 활성화되어 있으며 모든 오리진을 허용합니다. 동작을 상세하게 조절하기 위해 [옵션 객체](https://github.com/expressjs/cors#configuration-options)를 전달하거나, 사용하지 않기 위해 `false`를 전달하세요.
 
 ## server.headers {#server-headers}
 
@@ -149,15 +160,15 @@ HMR 연결을 설정하거나 사용하지 않을 수 있습니다. (HMR 웹 소
 
 ::: tip 참고
 
-기본적으로 Vite는 리버스 프록시가 WebSocket 프록시를 지원한다고 가정하고 동작합니다. 만약 Vite HMR 클라이언트가 WebSocket 연결에 실패하게 되면, 클라이언트는 리버스 프록시 대신 WebSocket을 Vite HMR 서버에 직접 연결합니다:
+기본적으로 Vite는 리버스 프락시가 WebSocket 프락시를 지원한다고 가정하고 동작합니다. 만약 Vite HMR 클라이언트가 WebSocket 연결에 실패하게 되면, 클라이언트는 리버스 프락시 대신 WebSocket을 Vite HMR 서버에 직접 연결합니다:
 
 ```
-Direct websocket connection fallback. Check out https://vitejs-kr.github.io/config/server-options.html#server-hmr to remove the previous connection error.
+Direct websocket connection fallback. Check out https://vitejs.dev/config/server-options.html#server-hmr to remove the previous connection error.
 ```
 
-위와 같은 상황이 발생될 때 브라우저에 나타나는 이 오류는 무시해도 됩니다. 다만 아래의 작업들 중 하나를 통해 직접 리버스 프록시를 우회해서 오류를 나타나지 않게끔 할 수도 있습니다:
+위와 같은 상황이 발생될 때 브라우저에 나타나는 이 오류는 무시해도 됩니다. 다만 아래의 작업들 중 하나를 통해 직접 리버스 프락시를 우회해서 오류를 나타나지 않게끔 할 수도 있습니다:
 
-- WebSocket도 프록시하도록 리버스 프록시를 구성
+- WebSocket도 프락시하도록 리버스 프락시를 구성
 - [`server.strictPort` 옵션의 값을 `true`로](#server-strictport), 그리고 `server.hmr.clientPort`를 `server.port`와 동일한 값으로 설정
 - `server.hmr.port`를 [`server.port`](#server-port와 다른 값으로 설정
 
@@ -192,7 +203,7 @@ WSL2에서 Vite를 실행할 때, WSL2가 아닌 타 Windows 응용 프로그램
 
 이를 해결하기 위해 아래 중 하나를 시도할 수 있습니다:
 
-- **권고 사항**: WSL2 응용 프로그램을 사용해 파일을 편집
+- **권고 사항:** WSL2 응용 프로그램을 사용해 파일을 편집
   - 또한 WSL2에서 Windows 파일 시스템에 접근하는 것은 느리기 때문에 프로젝트 폴더를 Windows 파일 시스템 외부로 이동시키는 것이 좋습니다. 이러한 오버헤드를 제거하면 성능이 향상됩니다.
 - `{ usePolling: true }` 로 설정
   - 참고로 [`usePolling`은 CPU 사용률을 높입니다](https://github.com/paulmillr/chokidar#performance).
@@ -236,15 +247,8 @@ async function createServer() {
 createServer()
 ```
 
-## server.base {#server-base}
-
-- **타입:** `string | undefined`
-
-Vite를 하위 디렉터리로 프록시하기 위해 이 디렉터리를 http 요청 앞에 추가합니다. 시작과 끝이 모두 `/` 문자여야 합니다.
-
 ## server.fs.strict {#server-fs-strict}
 
-- **실험적 기능**
 - **타입:** `boolean`
 - **기본값:** `true` (Vite 2.7에서 기본적으로 활성화되도록 변경되었습니다.)
 
@@ -252,10 +256,11 @@ Vite를 하위 디렉터리로 프록시하기 위해 이 디렉터리를 http �
 
 ## server.fs.allow {#server-fs-allow}
 
-- **실험적 기능**
 - **타입:** `string[]`
 
 `/@fs/`를 통해 제공될 수 있는 파일을 제한합니다. `server.fs.strict`가 `true`로 설정된 경우, 이 목록에 포함되지 않았으며 허용된 파일에서 `import` 되는 것도 아닌 외부 파일에 접근하면 403 결과를 반환합니다.
+
+디렉터리와 파일 모두 제공될 수 있습니다.
 
 Vite는 잠재적인 작업 공간의 루트를 검색하여 기본값으로 사용합니다. 유효한 작업 공간은 다음 조건을 충족합니다. 그렇지 않으면 [프로젝트 루트](/guide/#index-html-and-project-root)로 대체됩니다.
 
@@ -289,7 +294,8 @@ export default defineConfig({
         // 작업 공간(Workspace)의 루트를 지정
         searchForWorkspaceRoot(process.cwd()),
         // 커스텀 allow 옵션 규칙
-        '/path/to/custom/allow'
+        '/path/to/custom/allow_directory',
+        '/path/to/custom/allow_file.demo',
       ]
     }
   }
@@ -298,11 +304,10 @@ export default defineConfig({
 
 ## server.fs.deny {#server-fs-deny}
 
-- **타입**: `string[]`
+- **타입:** `string[]`
+- **기본값:** `['.env', '.env.*', '*.{crt,pem}']`
 
-Vite dev 서버에서 제공되지 않기를 원하는 민감한 파일들에 대한 차단 목록입니다.
-
-기본적으로 `['.env', '.env.*', '*.{pem,crt}']` 파일들이 들어가 있습니다.
+Vite dev 서버에서 제공되지 않기를 원하는 민감한 파일들에 대한 차단 목록입니다. 이 옵션은 [`server.fs.allow`](#server-fs-allow)보다 높은 우선 순위를 가지며, [피코매치 패턴](https://github.com/micromatch/picomatch#globbing-features)을 사용할 수 있습니다.
 
 ## server.origin {#server-origin}
 
@@ -317,3 +322,30 @@ export default defineConfig({
   }
 })
 ```
+
+## server.sourcemapIgnoreList {#server-sourcemapignorelist}
+
+- **타입:** `false | (sourcePath: string, sourcemapPath: string) => boolean`
+- **기본값:** `(sourcePath) => sourcePath.includes('node_modules')`
+
+서버 소스맵에서 소스 파일을 무시할지 여부로, [`x_google_ignoreList` 소스 맵 확장](https://developer.chrome.com/articles/x-google-ignore-list/) 필드를 채워넣는 데 사용됩니다.
+
+`server.sourcemapIgnoreList`는 개발 서버에 대한 [`build.rollupOptions.output.sourcemapIgnoreList`](https://rollupjs.org/configuration-options/#output-sourcemapignorelist)와 동일합니다. 두 구성 옵션 사이의 차이점은 `sourcePath`에 대한 상대 경로로 rollup 함수가 호출되는 동안 `server.sourcemapIgnoreList`는 절대 경로로 호출된다는 것입니다. 개발 중에 대부분의 모듈은 맵과 소스가 동일한 폴더에 있으므로 `sourcePath`에 대한 상대 경로는 파일 이름 자체입니다. 이러한 경우 절대 경로를 사용하면 편리합니다.
+
+기본적으로 `node_modules`가 포함된 경로를 모두 제외합니다. 이 동작을 비활성화하려면 `false`를 전달하거나, 함수를 전달해 소스와 소스맵 경로를 받아 소스 경로를 무시할지 여부를 반환할 수 있습니다.
+
+```js
+export default defineConfig({
+  server: {
+    // 이는 기본 값으로, node_modules가 경로에 포함된 모든 파일의 경로를
+    // 무시할 목록에 추가합니다.
+    sourcemapIgnoreList(sourcePath, sourcemapPath) {
+      sourcePath.includes('node_modules')
+    }
+  }
+};
+```
+
+::: tip 참고
+[`server.sourcemapIgnoreList`](#server-sourcemapignorelist)와 [`build.rollupOptions.output.sourcemapIgnoreList`](https://rollupjs.org/configuration-options/#output-sourcemapignorelist)는 독립적으로 설정해야 합니다. `server.sourcemapIgnoreList`는 서버 전용 구성이며 정의된 rollup 옵션에서 기본값을 가져오지 않습니다.
+:::

@@ -66,40 +66,61 @@ $ npm run preview
 
    만약 `https://<USERNAME>.github.io/<REPO>/`와 같은 형태로 배포하고자 한다면, `base` 설정 값을 `'/<REPO>/'`로 지정해주세요.
 
-2. 프로젝트의 루트에 아래와 같은 내용이 들어간 `deploy.sh` 파일을 생성 및 실행해주세요(하이라이트 된 라인은 필요에 따라 주석 처리를 풀어주세요).
+2. 리포지토리 설정 페이지에서 GitHub Pages 설정으로 이동한 후, 배포 소스를 "GitHub Actions"로 지정해주세요. 이를 통해 프로젝트를 빌드하고 배포하는 워크플로우를 생성할 수 있습니다. 아래는 npm을 이용해 의존성을 설치하고 빌드하는 예시입니다:
 
-   ```bash{13,21,24}
-   #!/usr/bin/env sh
+   ```yml
+   # GitHub Pages에 정적 콘텐츠를 배포하기 위한 간단한 워크플로우
+   name: Deploy static content to Pages
 
-   # 에러가 발생될 경우 스크립트 실행을 중지
-   set -e
+   on:
+     # 기본 브랜치에 대한 푸시 이벤트 발생 시 실행
+     push:
+       branches: ['main']
 
-   # 앱 빌드
-   npm run build
+     # Actions 탭에서 수동으로 워크플로우를 실행할 수 있도록 구성
+     workflow_dispatch:
 
-   # 빌드된 파일이 존재하는 dist 디렉터리로 이동
-   cd dist
+   # GITHUB_TOKEN의 권한을 설정하여 GitHub Pages에 배포할 수 있도록 함
+   permissions:
+     contents: read
+     pages: write
+     id-token: write
 
-   # CNAME 파일을 이용해 커스텀 도메인을 지정할 수도 있습니다.
-   # echo 'www.example.com' > CNAME
+   # 동시에 하나의 배포만 허용하도록 구성
+   concurrency:
+     group: 'pages'
+     cancel-in-progress: true
 
-   git init
-   git checkout -b main
-   git add -A
-   git commit -m 'deploy'
-
-   # https://<USERNAME>.github.io 에 배포
-   # git push -f git@github.com:<USERNAME>/<USERNAME>.github.io.git main
-
-   # https://<USERNAME>.github.io/<REPO> 에 배포
-   # git push -f git@github.com:<USERNAME>/<REPO>.git main:gh-pages
-
-   cd -
+   jobs:
+     # 단순히 배포만 수행하기에 하나의 잡으로만 구성
+     deploy:
+       environment:
+         name: github-pages
+         url: ${{ steps.deployment.outputs.page_url }}
+       runs-on: ubuntu-latest
+       steps:
+         - name: Checkout
+           uses: actions/checkout@v3
+         - name: Set up Node
+           uses: actions/setup-node@v3
+           with:
+             node-version: 18
+             cache: 'npm'
+         - name: Install dependencies
+           run: npm install
+         - name: Build
+           run: npm run build
+         - name: Setup Pages
+           uses: actions/configure-pages@v3
+         - name: Upload artifact
+           uses: actions/upload-pages-artifact@v1
+           with:
+             # dist 디렉터리 업로드
+             path: './dist'
+         - name: Deploy to GitHub Pages
+           id: deployment
+           uses: actions/deploy-pages@v1
    ```
-
-::: tip
-물론 CI 툴을 이용해 위 스크립트 기반으로 배포가 자동으로 이루어지게끔 설정이 가능합니다.
-:::
 
 ## GitLab Pages 그리고 GitLab CI {#github-pages-and-gitlab-ci}
 
@@ -294,23 +315,23 @@ VS Code에 확장 프로그램을 설치한 뒤 앱의 루트 디렉터리로 �
 
 ## Render {#render}
 
-You can deploy your Vite app as a Static Site on [Render](https://render.com/).
+[Render](https://render.com/)를 이용해 Vite 앱을 정적 웹 사이트로 배포할 수 있습니다.
 
-1. Create a [Render account](https://dashboard.render.com/register).
+1. [Render 계정](https://dashboard.render.com/register)을 생성합니다.
 
-2. In the [Dashboard](https://dashboard.render.com/), click the **New** button and select **Static Site**.
+2. [대시보드](https://dashboard.render.com/)에서 **New** 버튼을 클릭한 뒤 **Static Site**를 선택합니다.
 
-3. Connect your GitHub/GitLab account or use a public repository.
+3. GitHub/GitLab 계정을 연결하거나, 공개 리포지토리를 사용합니다.
 
-4. Specify a project name and branch.
+4. 프로젝트 이름과 브랜치를 지정합니다.
 
    - **Build Command**: `npm run build`
    - **Publish Directory**: `dist`
 
-5. Click **Create Static Site**.
+5. **Create Static Site**를 클릭합니다.
 
-   Your app should be deployed at `https://<PROJECTNAME>.onrender.com/`.
+   앱은 `https://<PROJECTNAME>.onrender.com/` 경로로 배포됩니다.
 
-By default, any new commit pushed to the specified branch will automatically trigger a new deploy. [Auto-Deploy](https://render.com/docs/deploys#toggling-auto-deploy-for-a-service) can be configured in the project settings.
+기본적으로 지정된 브랜치에 새로운 커밋이 Push되면 자동으로 새로운 배포가 트리거됩니다. [자동 배포](https://render.com/docs/deploys#toggling-auto-deploy-for-a-service)는 프로젝트 설정에서 구성할 수 있습니다.
 
-You can also add a [custom domain](https://render.com/docs/custom-domains) to your project.
+프로젝트에 [커스텀 도메인](https://render.com/docs/custom-domains)을 추가할 수도 있습니다.

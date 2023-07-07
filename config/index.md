@@ -4,7 +4,7 @@ title: Vite 설정하기
 
 # Vite 설정하기 {#configuring-vite}
 
-명령 줄에서 `vite`를 실행시킬 때, Vite는 자동으로 [프로젝트 루트](/guide/#index-html-and-project-root)의 `vite.config.js` 파일 확인을 시도합니다.
+명령 줄에서 `vite`를 실행시킬 때, Vite는 자동으로 [프로젝트 루트](/guide/#index-html-and-project-root)의 `vite.config.js` 파일 확인을 시도합니다. (다른 JS 및 TS 확장도 지원)
 
 가장 기본적인 설정 파일의 내용은 다음과 같습니다:
 
@@ -57,6 +57,7 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       // 개발 서버 설정
     }
   } else {
+    // command === 'build'
     return {
       // 빌드 설정
     }
@@ -70,7 +71,7 @@ Vite의 API에서 `command` 값은 개발 서버(참고로 CLI `vite`는 `vite d
 
 ## 비동기 설정 {#async-config}
 
-만약 설정에서 비동기(async) 함수를 호출해야 한다면, async 함수를 내보낼 수 있습니다:
+만약 설정에서 비동기 함수를 호출해야 하는 경우, 이 대신 비동기 함수를 내보낼 수 있습니다. 또한 이 비동기 함수는 인텔리센스 지원을 위해 `defineConfig`를 통해 전달할 수도 있습니다:
 
 ```js
 export default defineConfig(async ({ command, mode }) => {
@@ -81,7 +82,7 @@ export default defineConfig(async ({ command, mode }) => {
 })
 ```
 
-## 환경 변수 {#environment-variables}
+## 설정에서 환경 변수 사용하기 {#using-environment-variables-in-config}
 
 환경 변수 역시 `process.env` 객체를 통해 가져올 수 있습니다.
 
@@ -97,7 +98,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     // Vite 설정
     define: {
-      __APP_ENV__: env.APP_ENV
+      __APP_ENV__: JSON.stringify(env.APP_ENV),
     }
   }
 })

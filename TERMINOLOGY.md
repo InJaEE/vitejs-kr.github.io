@@ -1,5 +1,7 @@
 ## 영어 번역 용어 비교표
 
+> 영어 번역 용어 비교표입니다. 번역 용어를 추가하거나 수정하고 싶으시다면 언제든지 PR 생성해주세요.
+
 | 영어           | 한국어         |
 | -------------- | -------------- |
 | Application    | 애플리케이션   |
@@ -13,7 +15,7 @@
 | Label          | 레이블         |
 | Message        | 메시지         |
 | Monorepo       | 모노리포       |
-| On-Demand      | 온디맨드       |
+| On-demand      | 온디맨드       |
 | Preview        | 프리뷰         |
 | Production     | 프로덕션       |
 | Property       | 프로퍼티       |
@@ -23,7 +25,11 @@
 | Security Notes | 보안 권고 사항 |
 | Shim           |                |
 | Source Map     | 소스 맵        |
-| Tree-Shaking   | 트리 셰이킹    |
+| Tree-shaking   | 트리 셰이킹    |
 | Virtual Module | 가상 모듈      |
 | Vite           |                |
 | Worker         | 워커           |
+| Side effect    | 사이드 이펙트  |
+| Proxy          | 프락시         |
+| Minification   | 축소화         |
+| Release        | 릴리스         |

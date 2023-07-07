@@ -18,7 +18,7 @@ Vite는 **`import.meta.env`** 객체를 이용해 환경 변수에 접근할 수
 
 프로덕션에서는 환경 변수가 모두 **정적으로 교체됩니다**. 따라서 항상 환경 변수는 정적으로 참조해야만 하며, `import.meta.env[key]`와 같은 동적 참조는 작동하지 않습니다.
 
-JavaScript 문자열 및 Vue 템플릿에서도 마찬가지로 환경 변수는 모두 정적으로 교체됩니다. 이로 인해 환경 변수와 동일한 네이밍을 갖지만 실제로는 환경 변수가 아닌 경우, 의도하지 않은 동작이 발생될 수 있습니다. 가령 `"process.env.`<wbr>`NODE_ENV"`가 `""development": "`로 교체되는 경우, `Missing Semicolon` 또는 `Unexpected token`과 같은 오류가 표시됩니다.
+JavaScript 문자열 및 Vue 템플릿에서도 마찬가지로 환경 변수는 모두 정적으로 교체됩니다. 이로 인해 환경 변수와 동일한 네이밍을 갖지만 실제로는 환경 변수가 아닌 경우, 의도하지 않은 동작이 발생될 수 있습니다. 가령 `"process.env.NODE_ENV"`가 `""development": "`로 교체되는 경우, `Missing Semicolon` 또는 `Unexpected token`과 같은 오류가 표시됩니다.
 
 - JavaScript 문자열의 경우, `'import.meta\u200b.env.MODE'`와 같이 너비가 0인 공백으로 문자열을 분리
 
@@ -60,7 +60,18 @@ console.log(import.meta.env.VITE_SOME_KEY) // 123
 console.log(import.meta.env.DB_PASSWORD) // undefined
 ```
 
-만약 환경 변수에 대한 접미사(Prefix)를 커스터마이즈 하고자 한다면, [envPrefix](/config/shared-options.html#envprefix) 옵션을 참고해주세요.
+또한 Vite는 [dotenv-expand](https://github.com/motdotla/dotenv-expand)를 사용해 기본적으로 환경 변수를 확장합니다. 문법에 대해 더 알아보고 싶다면 [이 문서](https://github.com/motdotla/dotenv-expand#what-rules-does-the-expansion-engine-follow)를 참고하세요.
+
+참고로 만약 환경 변수의 값에 `$`를 사용하고 싶다면 `\`를 사용해야 합니다.
+
+```
+KEY=123
+NEW_KEY1=test$foo   # test
+NEW_KEY2=test\$foo  # test$foo
+NEW_KEY3=test$KEY   # test123
+```
+
+환경 변수에 대한 접미사(Prefix)를 커스터마이즈 하고자 한다면, [envPrefix](/config/shared-options.html#envprefix) 옵션을 참고해주세요.
 
 :::warning 보안 권고 사항
 - `.env.*.local` 파일은 오로지 로컬에서만 접근이 가능한 파일이며, 데이터베이스 비밀번호와 같은 민감한 정보를 이 곳에 저장하도록 합니다. 또한 `.gitignore` 파일에 `*.local` 파일을 명시해 Git에 체크인되는 것을 방지하도록 합니다.
@@ -93,6 +104,17 @@ interface ImportMeta {
 }
 ```
 
+## HTML 환경 변수 대체 {#html-env-replacement}
+
+Vite는 HTML 파일에서 환경 변수를 대체하는 기능도 지원합니다. `import.meta.env`의 모든 속성은 특수한 `%ENV_NAME%` 구문을 사용해 HTML 파일에서도 사용할 수 있습니다.
+
+```html
+<h1>Vite is running in %MODE%</h1>
+<p>Using data from %VITE_API_URL%</p>
+```
+
+다만 환경 변수가 `import.meta.env`에 존재하지 않는다면 HTML에서는 무시되고 대체되지 않습니다. 예를 들어 `%NON_EXISTENT%`라는 환경 변수가 `import.meta.env`에 존재하지 않는다면, JS에서는 `import.meta.env.NON_EXISTENT`가 `undefined`로 대체되지만, HTML에서는 무시되고 대체되지 않습니다.
+
 ## 모드 {#modes}
 
 기본적으로, `dev` 명령으로 실행되는 개발 서버는 `development` 모드로 동작하고, `build` 명령으로 실행되는 경우에는 `production` 모드로 동작합니다.
@@ -104,22 +126,22 @@ interface ImportMeta {
 VITE_APP_TITLE=My App
 ```
 
-앱 내에서는 `My App` 이라는 문자열이 `import.meta.env.VITE_APP_TITLE` 환경 변수를 통해 나타나지게 됩니다.
-
-이 **모드** 라는 개념은 단지 개발(`development`) 모드나 프로덕션(`production`) 모드 뿐만 아니라 더 넓은 개념을 다루고 있습니다. 가령, 프로덕션 모드와 비슷한(그러나 일부 다른 환경 변수를 갖는) "staging" 이라는 모드가 필요하다면 어떻게 해야 할까요?
-
-방법은 간단하게도, 그저 `--mode` 옵션을 전달해 사용할 모드를 지정하면 됩니다. 예를 들어 "staging" 모드로 서버를 동작(배포)하고 싶다면 아래와 같이 명령을 실행해주면 됩니다.
+특정 상황에서는 `vite build` 명령을 실행할 때 다른 모드를 사용하여 다른 타이틀을 렌더링하고 싶을 수 있습니다. `--mode` 옵션 플래그를 통해 기본 동작을 덮어쓸 수 있습니다. 예를 들어, "staging" 모드를 위해 앱을 빌드하고 싶다면 다음과 같이 실행할 수 있습니다:
 
 ```bash
 vite build --mode staging
 ```
 
-"staging" 모드에서 사용될 환경 변수는 `.env.staging` 파일에 정의합니다.
+그리고 `.env.staging` 파일을 생성합니다:
 
 ```
 # .env.staging
-NODE_ENV=production
 VITE_APP_TITLE=My App (staging)
 ```
 
-위와 같이 환경 변수를 설정하게 되면 "staging" 모드에서는 `My App (staging)` 이라는 문자열이 `import.meta.env.VITE_APP_TITLE` 환경 변수를 통해 나타나지게 됩니다.
+`vite build` 명령은 기본적으로 `production` 모드로 동작하기 때문에, 다른 모드와 `.env` 파일 설정을 통해 `development` 모드로 빌드를 실행할 수 있습니다:
+
+```
+# .env.testing
+NODE_ENV=development
+```

@@ -18,8 +18,8 @@ SSR은 동일한 전체 사이트를 Node.js에서 동작시키고, 이를 HTML�
 
 Vite는 서버 측 렌더링(SSR, Server-side Rendering)을 기본적으로 지원합니다. Vite 플레이그라운드에서는 SSR 설정에 대한 Vue 3 및 React 예제를 제공하고 있으며, 이를 참고할 수 있습니다.
 
-- [Vue 3](https://github.com/vitejs/vite/tree/main/playground/ssr-vue)
-- [React](https://github.com/vitejs/vite/tree/main/playground/ssr-react)
+- [Vue 3](https://github.com/vitejs/vite-plugin-vue/tree/main/playground/ssr-vue)
+- [React](https://github.com/vitejs/vite-plugin-react/tree/main/playground/ssr-react)
 
 ## 프로젝트 구조 {#source-structure}
 
@@ -53,7 +53,7 @@ if (import.meta.env.SSR) {
 }
 ```
 
-이러한 코드는 빌드 중에 정적으로 대체되기에, 사용하지 않는 분기문에 대해서는 트리-쉐이킹\*을 적용합니다. (\* 트리 셰이킹: Tree-shaking, 사용하지 않는 코드를 제거하는 기법 / [참고](https://webpack.js.org/guides/tree-shaking/))
+이러한 코드는 빌드 중에 정적으로 대체되기에, 사용하지 않는 분기문에 대해서는 트리 셰이킹을 적용합니다.
 
 ## 개발 서버 구성하기 {#setting-up-the-dev-server}
 
@@ -115,7 +115,7 @@ app.use('*', async (req, res, next) => {
     template = await vite.transformIndexHtml(url, template)
 
     // 3. 서버의 진입점(Entry)을 로드합니다.
-    //    vite.ssrLoadModule은 Node.js에서 사용할 수 있도록 ESM 소스 코드를 자동으로 변환합니다.
+    //    ssrLoadModule은 Node.js에서 사용할 수 있도록 ESM 소스 코드를 자동으로 변환합니다.
     //    추가적인 번들링이 필요하지 않으며, HMR과 유사한 동작을 수행합니다.
     const { render } = await vite.ssrLoadModule('/src/entry-server.js')
 
@@ -161,14 +161,14 @@ SSR 프로젝트를 프로덕션으로 제공하기 위해서는 다음이 필�
   "scripts": {
     "dev": "node server",
     "build:client": "vite build --outDir dist/client",
-    "build:server": "vite build --outDir dist/server --ssr src/entry-server.js "
+    "build:server": "vite build --outDir dist/server --ssr src/entry-server.js"
   }
 }
 ```
 
 `--ssr` 플래그는 SSR 빌드임을 의미하며, SSR의 진입점(Entry)이 될 스크립트를 명시해줘야 합니다.
 
-그 다음, `server.js`에서 `process.env.`<wbr>`NODE_ENV` 값을 확인하여 일부 프로덕션에 대한 특정 로직을 추가해줘야 합니다:
+그 다음, `server.js`에서 `process.env.NODE_ENV` 값을 확인하여 일부 프로덕션에 대한 특정 로직을 추가해줘야 합니다:
 
 - 프로젝트 루트의 `index.html` 파일이 아닌, `dist/client/index.html`를 템플릿으로 사용하도록 합니다. 이 파일에 클라이언트 빌드에 대한 올바른 참조가 포함되어 있기 때문입니다.
 
@@ -176,7 +176,7 @@ SSR 프로젝트를 프로덕션으로 제공하기 위해서는 다음이 필�
 
 - `vite` 개발 서버의 생성과 모든 사용은 개발 전용으로 구분된 조건문 아래로 이동한 다음, `dist/client`를 통해 파일을 제공할 수 있도록 미들웨어를 추가해줍니다.
 
-이 [Vue](https://github.com/vitejs/vite/tree/main/playground/ssr-vue) 및 [React](https://github.com/vitejs/vite/tree/main/playground/ssr-react) 데모를 참조해 자세한 프로젝트 구성을 확인할 수 있습니다.
+이 [Vue](https://github.com/vitejs/vite-plugin-vue/tree/main/playground/ssr-vue) 및 [React](https://github.com/vitejs/vite-plugin-react/tree/main/playground/ssr-react) 데모를 참조해 자세한 프로젝트 구성을 확인할 수 있습니다.
 
 ## 사전 로드될 지시문 생성하기 {#generating-preload-directives}
 
@@ -200,11 +200,11 @@ const html = await vueServerRenderer.renderToString(app, ctx)
 // ctx.modules는 이제 렌더링 중에 사용된 모듈 ID의 집합(Set)입니다.
 ```
 
-`server.js`의 프로덕션 분기문에서는 매니페스트 파일을 읽고, `src/entry-server.js`에서 내보낸(Export) `render` 함수에 전달해야 합니다. 이는 비동기 라우팅에서 사용되는 파일에 대한 사전 로드 지시문(Directives)을 렌더링하기에 충분한 정보를 제공합니다. 전체 예제는 [데모 소스 코드](https://github.com/vitejs/vite/blob/main/playground/ssr-vue/src/entry-server.js)를 참고해주세요.
+`server.js`의 프로덕션 분기문에서는 매니페스트 파일을 읽고, `src/entry-server.js`에서 내보낸(Export) `render` 함수에 전달해야 합니다. 이는 비동기 라우팅에서 사용되는 파일에 대한 사전 로드 지시문(Directives)을 렌더링하기에 충분한 정보를 제공합니다. 전체 예제는 [데모 소스 코드](https://github.com/vitejs/vite-plugin-vue/blob/main/playground/ssr-vue/src/entry-server.js)를 참고해주세요. 추가로 이 정보를 이용해 [103 Early Hints](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/103)를 사용할 수도 있습니다.
 
 ## 사전 렌더링 / SSG {#pre-rendering-ssg}
 
-만약 어떤 라우트에 필요한 경로와 데이터를 미리 알고 있는 경우, 프로덕션 SSR과 동일한 로직을 사용하여 이를 정적 HTML 파일로 미리 렌더링할 수 있습니다. 이는 SSG(정적 사이트 생성, Static-Site Generation)의 한 형태로 생각할 수 있습니다. 동작하는 예제는 [사전 렌더링 데모 스크립트](https://github.com/vitejs/vite/blob/main/playground/ssr-vue/prerender.js)를 참고해주세요.
+만약 어떤 라우트에 필요한 경로와 데이터를 미리 알고 있는 경우, 프로덕션 SSR과 동일한 로직을 사용하여 이를 정적 HTML 파일로 미리 렌더링할 수 있습니다. 이는 SSG(정적 사이트 생성, Static-Site Generation)의 한 형태로 생각할 수 있습니다. 동작하는 예제는 [사전 렌더링 데모 스크립트](https://github.com/vitejs/vite-plugin-vue/blob/main/playground/ssr-vue/prerender.js)를 참고해주세요.
 
 ## SSR 외부화 {#ssr-externals}
 
@@ -215,12 +215,12 @@ SSR을 실행할 때 디펜던시는 기본적으로 Vite의 SSR 변환 모듈 �
 연결된 디펜던시의 경우, 기본적으로 Vite의 HMR을 활용하기 위해 외부화되지 않습니다. 만약 테스트를 위해 디펜던시가 연결되지 않은 것처럼 구성하고자 한다면 [`ssr.external`](../config/ssr-options.md#ssr-external)에 디펜던시를 추가해주세요.
 
 :::warning 별칭을 사용하는 경우
-만약 어떤 하나의 패키지를 다른 패키지를 리다이렉트하는 별칭을 사용하는 경우, 외부화된 SSR 디펜던시에서도 사용할 수 있도록 `node_modules` 패키지에 별칭을 지정할 수 있습니다. [Yarn](https://classic.yarnpkg.com/en/docs/cli/add/#toc-yarn-add-alias)과 [pnpm](https://pnpm.js.org/en/aliases) 모두 `npm:` 접두사를 사용하여 별칭을 지정할 수 있습니다.
+만약 어떤 하나의 패키지를 다른 패키지를 리다이렉트하는 별칭을 사용하는 경우, 외부화된 SSR 디펜던시에서도 사용할 수 있도록 `node_modules` 패키지에 별칭을 지정할 수 있습니다. [Yarn](https://classic.yarnpkg.com/en/docs/cli/add/#toc-yarn-add-alias)과 [pnpm](https://pnpm.io/aliases/) 모두 `npm:` 접두사를 사용하여 별칭을 지정할 수 있습니다.
 :::
 
 ## SSR 전용 플러그인 로직 {#ssr-specific-plugin-logic}
 
-Vue 또는 Svelte와 같은 일부 프레임워크는 클라이언트 또는 SSR에 따라 컴포넌트를 다른 형식으로 컴파일합니다. 이 조건부 변환을 지원하기 위해, Vite는 `options` 객체에 존재하는 `ssr` 이라는 추가적인 인수를 아래의 플러그인 훅(Hook)에 전달합니다:
+Vue 또는 Svelte와 같은 일부 프레임워크는 클라이언트 또는 SSR에 따라 컴포넌트를 다른 형식으로 컴파일합니다. 이 조건부 변환을 지원하기 위해, Vite는 `options` 객체에 존재하는 `ssr` 이라는 추가적인 인수를 아래의 플러그인 훅에 전달합니다:
 
 - `resolveId`
 - `load`
@@ -266,6 +266,6 @@ Vite 2.7 이전에는 `options` 객체를 사용하는 대신 `ssr` 매개변수
 SSR 미들웨어가 Vite 미들웨어 _이후에_ 실행되기를 원한다면 포스트 훅을 사용하세요.
 :::
 
-## SSR Format {#ssr-format}
+## SSR 포맷 {#ssr-format}
 
-By default, Vite generates the SSR bundle in ESM. There is experimental support for configuring `ssr.format`, but it isn't recommended. Future efforts around SSR development will be based on ESM, and CommonJS remain available for backward compatibility. If using ESM for SSR isn't possible in your project, you can set `legacy.buildSsrCjsExternalHeuristics: true` to generate a CJS bundle using the same [externalization heuristics of Vite v2](https://v2.vitejs.dev/guide/ssr.html#ssr-externals).
+기본적으로 Vite는 SSR 번들을 ESM 형식으로 생성합니다. `ssr.format`을 구성하는 실험적인 옵션은 있지만, 권장되는 방법은 아닙니다. 앞으로도 SSR은 ESM을 제공하도록 개발할 것이며, CommonJS는 하위 호환성을 위해 사용할 수 있게끔 제공할 예정입니다. 만약 SSR에 대해 ESM을 사용할 수 없는 경우 `legacy.buildSsrCjsExternalHeuristics: true`를 설정하여 동일한 [Vite v2의 외부화 휴리스틱](https://v2.vitejs.dev/guide/ssr.html#ssr-externals)을 사용하여 CJS 번들을 생성할 수 있습니다.

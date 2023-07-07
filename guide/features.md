@@ -12,7 +12,7 @@ import { someMethod } from 'my-dep'
 
 모듈의 위치를 찾을 수 없기 때문인데, vite는 다음을 기준으로 모듈을 가져오기 때문에 위 코드 역시 정상적으로 실행됩니다.
 
-1. Vite를 통해 ESM 스타일로 [사전에 번들링 된](./dep-pre-bundling) CommonJS 및 UMD\* 모듈. 이 과정은 [Esbuild](https://esbuild.github.io/)를 통해 이루어지며, JavaScript 기반의 다른 번들러보다 빠른 콜드-스타트가 가능합니다. (\* Universal Module Definition: CommonJS와 AMD 스타일의 모듈을 둘 다 지원하는 모듈 형태)
+1. Vite를 통해 ESM 스타일로 [사전에 번들링 된](./dep-pre-bundling) CommonJS 및 UMD 모듈. 이 과정은 [Esbuild](https://esbuild.github.io/)를 통해 이루어지며, JavaScript 기반의 다른 번들러보다 빠른 콜드 스타트가 가능합니다.
 
 2. `/node_modules/.vite/deps/my-dep.js?v=f3sf2ebd`와 같이 URL을 이용해 ESM을 지원하는 브라우저에서 모듈을 가져올 수 있도록 `import` 구문을 수정.
 
@@ -22,7 +22,7 @@ vite는 HTTP 헤더를 이용해 요청한 디펜던시를 브라우저에서 �
 
 ## Hot Module Replacement {#hot-module-replacement}
 
-vite는 기본 ESM를 통해 [HMR API](./api-hmr)를 제공합니다. HMR 기능이 있는 프레임워크는 API를 활용하여 페이지를 다시 로드하거나 애플리케이션 상태를 날려버리지 않고 즉각적이고 정확한 업데이트를 제공할 수 있습니다. vite는 [Vue Single File Components](https://github.com/vitejs/vite/tree/main/packages/plugin-vue), [React Fast Refresh](https://github.com/vitejs/vite/tree/main/packages/plugin-react) 또는 [@prefresh/vite](https://github.com/JoviDeCroock/prefresh/tree/main/packages/vite)과 같은 First-party HMR\* 모듈을 제공하고 있습니다. (\* Vite에서 직접 제공하는 HMR 모듈)
+vite는 기본적으로 ESM를 통해 [HMR API](./api-hmr)를 제공합니다. HMR 기능이 있는 프레임워크는 API를 활용하여 페이지를 다시 로드하거나 애플리케이션 상태를 날려버리지 않고 즉각적이고 정확한 업데이트를 제공할 수 있습니다. vite는 [Vue Single File Components](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue), [React Fast Refresh](https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react) 또는 [@prefresh/vite](https://github.com/JoviDeCroock/prefresh/tree/main/packages/vite)과 같은 First-party HMR 모듈을 제공하고 있습니다.
 
 물론, [`create-vite`](./)에서 제공하는 템플릿 안에는 HMR 모듈이 포함되어 있기 때문에 굳이 위와 같은 방법을 따르지 않아도 됩니다.
 
@@ -30,7 +30,17 @@ vite는 기본 ESM를 통해 [HMR API](./api-hmr)를 제공합니다. HMR 기능
 
 vite는 `.ts` 파일에 대한 컴파일링 및 Import 역시 지원합니다.
 
-단, 타입 체킹은 오로지 IDE 또는 빌드 프로세스에만 의존하며, Vite 자체에서는 `.ts` 파일에 대한 **타입 체킹 작업을 진행하지 않습니다**. 타입 체킹이 필요하다면 `tsc --noEmit`\*을 빌드 스크립트에 넣어주세요. 만약 `*.vue` 소스 코드를 작성중이라면, `vue-tsc`를 설치해 `vue-tsc --noEmit`을 빌드 스크립트에 넣어서 타입 체킹을 하도록 설정할 수 있습니다. (\* `--noEmit`: 컴파일링 없이 타입 체킹만을 수행하는 옵션)
+### 트랜스파일만 수행 {#transpile-only}
+
+Vite는 `.ts` 파일에 대해서 **트랜스파일링만** 수행하며, 타입 검사는 IDE와 빌드 프로세스에서 수행된다고 가정합니다.
+
+Vite가 변환 과정의 일부로 타입 검사를 수행하지 않는 이유는 두 작업이 기본적으로 다르기 때문입니다. 트랜스파일링은 파일 단위로 작동할 수 있으며, 이는 Vite의 온디맨드 컴파일 모델과 완벽하게 일치합니다. 이에 반해 타입 검사는 전체 모듈 그래프에 대한 탐색이 필요합니다. Vite의 변환 파이프 라인에 타입 검사를 추가하게 된다면, 결국 Vite의 속도 이점은 사라지게 될 것입니다.
+
+Vite의 역할은 소스 모듈을 가능한 빠르게 브라우저에서 실행할 수 있는 형태로 변환하는 것입니다. 따라서 이를 위해 Vite의 변환 파이프 라인에서 정적 분석 검사를 분리하는 것을 권장합니다. 이러한 원칙은 ESLint와 같은 다른 정적 분석 검사에도 적용됩니다.
+
+- 프로덕션 빌드를 위해서는 Vite의 빌드 명령어에 `tsc --noEmit`을 추가로 실행할 수 있습니다.
+
+- 개발 중 IDE에서 제공하는 힌트 이상의 기능이 필요하다면, 별도의 프로세스에서 `tsc --noEmit --watch`를 실행해주세요. 만약 브라우저에서 직접 타입 에러를 확인하고 싶다면 [vite-plugin-checker](https://github.com/fi3ework/vite-plugin-checker)를 사용하는 것을 권장합니다.
 
 Vite의 TypeScript 컴파일링은 [Esbuild](https://github.com/evanw/esbuild)를 이용하며, TypeScript 소스 코드를 JavaScript 소스 코드로 변환하는 작업에 대해 `tsc` 대비 약 20~30배 정도 빠른 퍼포먼스를 보이고 있습니다. (HMR은 50ms 미만)
 
@@ -57,11 +67,11 @@ export type { T }
 
 #### `useDefineForClassFields` {#usedefineforclassfields}
 
-Vite 2.5.0 부터는 TypeScript의 변환 대상이 `ESNext`인 경우, 기본 값을 `true`로 설정합니다. 이는 [`tsc` 버전 4.3.2 이상](https://github.com/microsoft/TypeScript/pull/42663) 및 ECMAScript 표준을 따르도록 하는 설정입니다.
+Vite 2.5.0 부터는 TypeScript의 변환 대상이 `ESNext` 또는 `ES2022` 이상인 경우, 기본 값을 `true`로 설정합니다. 이는 [`tsc` 버전 4.3.2 이상](https://github.com/microsoft/TypeScript/pull/42663) 및 ECMAScript 표준을 따르도록 하는 설정입니다.
 
 그러나 다른 프로그래밍 언어나 이전 버전의 TypeScript를 사용하던 사람들에게는 직관적이지 않은 내용일 수 있습니다. 이에 대한 자세한 정보는 [TypeScript 3.7 릴리스 노트](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#the-usedefineforclassfields-flag-and-the-declare-property-modifier)를 참고할 수 있습니다.
 
-또한, [MobX](https://mobx.js.org/installation.html#use-spec-compliant-transpilation-for-class-properties)나 [Vue 클래스 컴포넌트 8.X](https://github.com/vuejs/vue-class-component/issues/465)와 같은 대부분의 라이브러리는 `"useDefineForClassFields": true`인 것으로 가정하고 동작합니다. 따라서 만약 클래스의 필드에 크게 의존하는 라이브러리를 사용하는 경우라면, 이러한 라이브러리를 사용하는 것에 대해 옵션을 수정하는 경우 상당한 주의를 기울어야 합니다.
+또한, [MobX](https://mobx.js.org/installation.html#use-spec-compliant-transpilation-for-class-properties)와 같은 대부분의 라이브러리는 `"useDefineForClassFields": true`인 것으로 가정하고 동작합니다. 따라서 만약 클래스의 필드에 크게 의존하는 라이브러리를 사용하는 경우라면, 이러한 라이브러리를 사용하는 것에 대해 옵션을 수정하는 경우 상당한 주의를 기울어야 합니다.
 
 다만 [`lit-element`](https://github.com/lit/lit-element/issues/1030)를 포함해 일부 라이브러리는 아직 이 새로운 기본값이 적용되지 않았습니다. 이러한 경우에는 `useDefineForClassFields`의 값을 `false`로 설정해주세요.
 
@@ -77,31 +87,45 @@ Vite 2.5.0 부터는 TypeScript의 변환 대상이 `ESNext`인 경우, 기본 �
 
 ### Client Types {#client-types}
 
-vite는 기본적으로 Node.js API 기반의 타입 시스템을 차용하고 있습니다. 따라서 Client-side의 환경을 위해 Shim을 구성하고자 한다면, `d.ts` 선언 파일을 추가해주세요.
+vite는 기본적으로 Node.js API 기반의 타입 시스템을 차용하고 있습니다. 따라서 클라이언트 측의 환경을 위해 Shim을 구성하고자 한다면 아래와 같이 `d.ts` 선언 파일을 추가해주세요.
 
 ```typescript
 /// <reference types="vite/client" />
 ```
 
-또는, `tsconfig` 내 `compilerOptions.types` 옵션에 `vite/client`를 명시해 줄 수도 있습니다.
+또는 `tsconfig.json` 내 `compilerOptions.types` 옵션에 `vite/client`를 명시해 줄 수도 있습니다:
 
-이를 통해 다음에 대한 Shim이 제공됩니다.
+```json
+{
+  "compilerOptions": {
+    "types": ["vite/client"]
+  }
+}
+```
+
+이를 통해 다음에 대한 Shim이 제공됩니다:
 
 - `.svg`와 같은 에셋
 - Vite를 통해 주입되는 `import.meta.env`에 명시된 [환경 변수](./env-and-mode#env-variables) 타입들
 - `import.meta.hot`에 명시된 [HMR API](./api-hmr) 타입들
 
 ::: tip
-타입을 재정의하고자 한다면 트리플-슬래시 지시자(Triple-slash Reference) 앞에 선언해주세요. 가령, `*.svg`의 `default import`를 React 컴포넌트로 만들고자 한다면 아래와 같이 타입을 재정의할 수 있습니다:
+기본 타입을 재정의하기 위해서는, 타이핑이 포함된 타입 정의 파일을 만든 뒤 `vite/client` 위에 해당 타입 파일에 대한 참조를 추가해야 합니다.
 
-```ts
-declare module '*.svg' {
-  const content: React.FC<React.SVGProps<SVGElement>>
-  export default content
-}
+가령 `*.svg`의 기본적인 import 결과를 React 컴포넌트로 만들기 위해서는 다음과 같이 작업해야 합니다:
 
-/// <reference types="vite/client" />
-```
+- `vite-env-override.d.ts` (타이핑을 포함하는 파일):
+  ```ts
+  declare module '*.svg' {
+    const content: React.FC<React.SVGProps<SVGElement>>
+    export default content
+  }
+  ```
+- `vite/client`에 대한 참조를 포함하는 파일:
+  ```ts
+  /// <reference types="./vite-env-override.d.ts" />
+  /// <reference types="vite/client" />
+  ```
 
 :::
 
@@ -109,17 +133,17 @@ declare module '*.svg' {
 
 vite는 기본적으로 Vue를 지원하고 있습니다.
 
-- Vue 3 SFC: [@vitejs/plugin-vue](https://github.com/vitejs/vite/tree/main/packages/plugin-vue)
-- Vue 3 JSX: [@vitejs/plugin-vue-jsx](https://github.com/vitejs/vite/tree/main/packages/plugin-vue-jsx)
-- Vue 2.7: [@vitejs/plugin-vue2](https://github.com/vitejs/vite-plugin-vue2)
-- Vue <2.7: [vite-plugin-vue2](https://github.com/underfin/vite-plugin-vue2)
+- Vue 3 SFC: [@vitejs/plugin-vue](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue)
+- Vue 3 JSX: [@vitejs/plugin-vue-jsx](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx)
+- Vue 2.7 SFC: [@vitejs/plugin-vue2](https://github.com/vitejs/vite-plugin-vue2)
+- Vue 2.7 JSX: [@vitejs/plugin-vue2-jsx](https://github.com/vitejs/vite-plugin-vue2-jsx)
 
 
 ## JSX {#jsx}
 
 `.jsx`와 `.tsx` 역시 사용이 가능합니다. 마찬가지로 [esbuild](https://esbuild.github.io)를 이용해 컴파일링합니다.
 
-기존에 Vue를 사용했던 개발자들은 Vue 3에서 제공하고 있는 API(HMR, 글로벌 컴포넌트, 디렉티브 및 슬롯 등)를 위해 [@vitejs/plugin-vue-jsx](https://github.com/vitejs/vite/tree/main/packages/plugin-vue-jsx)를 사용해야 합니다.
+기존에 Vue를 사용했던 개발자들은 Vue 3에서 제공하고 있는 API(HMR, 글로벌 컴포넌트, 디렉티브 및 슬롯 등)를 위해 [@vitejs/plugin-vue-jsx](https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue-jsx)를 사용해야 합니다.
 
 물론 React나 Vue를 사용하지 않는다 해도, [`esbuild` 옵션](/config/shared-options.md#esbuild)을 이용해 `jsxFactory`나 `jsxFragment`를 커스터마이징 할 수 있습니다. Preact를 예로 들어보자면 다음과 같습니다.
 
@@ -165,6 +189,8 @@ vite는 `postcss-import`를 이용해 CSS의 `@import`를 처리합니다. 또�
 ### PostCSS {#postcss}
 
 만약 프로젝트에 [PostCSS 설정 파일](https://github.com/postcss/postcss-load-config)이 존재한다면, vite는 이를 이용해 모든 CSS 파일에 해당 설정을 적용합니다.
+
+참고로 CSS의 축소화는 PostCSS 이후에 진행되며, [`build.cssTarget`](/config/build-options.md#build-csstarget) 옵션을 이용해 설정할 수 있습니다.
 
 ### CSS Modules {#css-modules}
 
@@ -222,9 +248,31 @@ Sass나 Less에서의 `@import` 별칭 또한 Vite에서 사용이 가능합니�
 CSS 콘텐츠의 자동 주입은 `?inline` 쿼리 매개변수를 통해 비활성화 할 수 있습니다. 이 경우 처리된 CSS 문자열은 평소와 같이 모듈의 `default export`로 반환되나, 스타일은 페이지에 주입되지 않습니다.
 
 ```js
-import styles from './foo.css' // 페이지에 스타일이 추가됨
-import otherStyles from './bar.css?inline' // 페이지에 스타일이 추가되지 않음
+import './foo.css' // 페이지에 스타일이 추가됨
+import otherStyles from './bar.css?inline' // 스타일이 추가되지 않음
 ```
+
+::: tip 참고
+CSS 파일에서의 기본 및 명명된 Import(`import style from './foo.css'`)는 Vite 4부터 사용할 수 없습니다. 이 대신 `?inline` 쿼리를 사용해주세요.
+:::
+
+### Lightning CSS {#lightning-css}
+
+Vite 4.4부터 [Lightning CSS](https://lightningcss.dev/)를 실험적으로 지원합니다. 사용하고자 한다면 [`css.transformer: 'lightningcss'`](../config/shared-options.md#css-transformer)로 설정하고, [`lightningcss`](https://www.npmjs.com/package/lightningcss)를 설치해 주세요:
+
+```bash
+npm add -D lightningcss
+```
+
+이 옵션을 활성화하면 CSS 파일이 PostCSS가 아닌 Lightning CSS로 처리됩니다. [`css.lightingcss`](../config/shared-options.md#css-lightningcss) 옵션에 Lightning CSS의 옵션을 전달해 이를 설정할 수 있습니다.
+
+CSS 모듈의 설정은 [`css.modules`](../config/shared-options.md#css-modules)(PostCSS가 CSS 모듈을 어떻게 처리하는지에 대한 설정) 대신 [`css.lightningcss.cssModules`](https://lightningcss.dev/css-modules.html)를 사용합니다.
+
+기본적으로 Vite는 CSS를 축소하기 위해 esbuild를 사용합니다. Lightning CSS는 [`build.cssMinify: 'lightningcss'`](../config/build-options.md#css-minify)를 통해 CSS 축소기로도 사용할 수도 있습니다.
+
+::: tip 참고
+Lightning CSS를 사용하는 경우 [CSS 전처리기](#css-pre-processors)는 지원되지 않습니다.
+:::
 
 ## 정적 에셋 {#static-assets}
 
@@ -266,13 +314,13 @@ JSON 파일은 바로 Import가 가능합니다. 물론, 가져올 필드를 지
 ```js
 // 객체 형태로 가져오기
 import json from './example.json'
-// 필드를 지정해 가져오기 (트리-쉐이킹 됩니다.)
+// 필드를 지정해 가져오기 (트리 셰이킹 됩니다.)
 import { field } from './example.json'
 ```
 
 ## Glob Import {#glob-import}
 
-vite는 `import.meta.glob` 함수를 이용해 여러 모듈을 한 번에 가져올 수 있도록 지원하고 있습니다. 이 때, Glob 패턴\*을 이용합니다. (\* [Glob 패턴 Wikipedia](https://en.wikipedia.org/wiki/Glob_(programming)))
+vite는 `import.meta.glob` 함수를 이용해 여러 모듈을 한 번에 가져올 수 있도록 지원하고 있습니다. 이 때, Glob 패턴을 이용합니다.
 
 ```js
 const modules = import.meta.glob('./dir/*.js')
@@ -318,10 +366,10 @@ const modules = {
 
 ### Glob Import As {#glob-import-as}
 
-`import.meta.glob` 역시 [문자열 형태로 에셋 가져오기](https://vitejs-kr.github.io/guide/assets.html#importing-asset-as-string) 기능과 유사하게 파일을 가져올 수 있습니다. 이는 [Import Reflection](https://github.com/tc39/proposal-import-reflection) 구문을 사용합니다:
+`import.meta.glob` 역시 [문자열 형태로 에셋 가져오기](https://ko.vitejs.dev/guide/assets.html#importing-asset-as-string) 기능과 유사하게 파일을 가져올 수 있습니다. 이는 [Import Reflection](https://github.com/tc39/proposal-import-reflection) 구문을 사용합니다:
 
 ```js
-const modules = import.meta.glob('./dir/*.js', { as: 'raw' })
+const modules = import.meta.glob('./dir/*.js', { as: 'raw', eager: true })
 ```
 
 위 코드는 다음과 같이 변환됩니다:
@@ -378,7 +426,10 @@ const modules = {
 `eager`와 같이 사용하면 모듈에 대한 트리 셰이킹도 가능합니다.
 
 ```ts
-const modules = import.meta.glob('./dir/*.js', { import: 'setup', eager: true })
+const modules = import.meta.glob('./dir/*.js', {
+  import: 'setup',
+  eager: true,
+})
 ```
 
 ```ts
@@ -423,10 +474,8 @@ const modules = import.meta.glob('./dir/*.js', {
 ```ts
 // 아래는 Vite에 의해 생성되는 코드입니다:
 const modules = {
-  './dir/foo.js': () =>
-    import('./dir/foo.js?foo=bar&bar=true').then((m) => m.setup),
-  './dir/bar.js': () =>
-    import('./dir/bar.js?foo=bar&bar=true').then((m) => m.setup)
+  './dir/foo.js': () => import('./dir/foo.js?foo=bar&bar=true'),
+  './dir/bar.js': () => import('./dir/bar.js?foo=bar&bar=true'),
 }
 ```
 
@@ -461,7 +510,7 @@ init().then((instance) => {
 })
 ```
 
-참고로 초기화 함수를 호출할 때 `imports` 옵션을 사용할 수 있는데, 이 값은 `WebAssembly.instantiate` 함수\*의 두 번째 인자 값으로 전달됩니다. (\* [`WebAssembly.instantiate` MDN doc](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate))
+참고로 초기화 함수를 호출할 때 `imports` 옵션을 사용할 수 있는데, 이 값은 `WebAssembly.instantiate` 함수의 두 번째 인자 값으로 전달됩니다.
 
 ```js
 init({
@@ -475,7 +524,7 @@ init({
 })
 ```
 
-프로덕션 빌드 시 `assetsInlineLimit` 옵션\*의 값보다 작은 `.wasm` 파일은 Base64 문자열 포맷으로 변환됩니다. 그렇지 않은 경우, `dist` 디렉터리에 파일이 복사되어 요청(Fetch) 시 불러오는 방식으로 동작하게 됩니다. (\* [`assetsInlineLimit` doc](/config/build-options.md#build-assetsinlinelimit))
+프로덕션 빌드 시 `assetsInlineLimit` 옵션의 값보다 작은 `.wasm` 파일은 Base64 문자열 포맷으로 변환됩니다. 그렇지 않은 경우, `dist` 디렉터리에 파일이 복사되어 요청(Fetch) 시 불러오는 방식으로 동작하게 됩니다.
 
 ::: warning
 [WebAssembly를 위한 ES 모듈 제안 사항](https://github.com/WebAssembly/esm-integration)은 현재 지원되지 않습니다. 이 대신 [`vite-plugin-wasm`](https://github.com/Menci/vite-plugin-wasm) 또는 기타 커뮤니티 플러그인을 사용해 이를 처리하세요.
@@ -511,7 +560,7 @@ import MyWorker from './worker?worker'
 const worker = new MyWorker()
 ```
 
-물론, `import` 대신 `importScripts()` 함수\*를 이용할 수도 있습니다. 다만 이 경우 개발 환경에서는 브라우저의 네이티브 API에만 의존하여 크롬에서만 동작한다는 것을 유의해주세요. 물론 프로덕션 빌드 시 다양한 브라우저를 지원하도록 컴파일됩니다. (\* [`importScripts()` MDN doc](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope/importScripts))
+워커 스크립트에서 `importScripts()` 대신 ESM `import` 구문을 사용할 수도 있습니다. **참고**: 개발 서버에서는 [브라우저 네이티브 API](https://caniuse.com/?search=module%20worker)(Firefox에서는 지원하지 않음)에 의존하지만, 프로덕션 빌드에서는 다양한 브라우저를 지원하도록 컴파일됩니다.
 
 마지막으로, 기본적으로 워커의 경우 프로덕션 빌드 분리된 청크로 컴파일됩니다. 만약 분리된 청크가 아니라 Base64 포맷의 문자열로 이를 사용하고자 한다면, `inline` 쿼리를 이용해주세요:
 
@@ -539,11 +588,11 @@ vite는 비동기적으로 불러와지는 청크 내에 CSS 코드가 포함된
 
 ### Preload Directives Generation {#preload-directives-generation}
 
-vite는 빌드 시 Direct Import 구문에 대해 `<link ref="modulepreload">` 디렉티브\*를 이용해 미리 모듈을 캐싱하도록 자동으로 변환합니다. 덕분에 해당 모듈을 필요로 하는 경우 이를 바로 사용할 수 있게 됩니다. (\* `modulepreload`: 더 자세한 내용은 [MDN doc](https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types/modulepreload) 또는 [Google developers](https://developers.google.com/web/updates/2017/12/modulepreload) 문서를 참고해주세요.)
+vite는 빌드 시 Direct Import 구문에 대해 `<link ref="modulepreload">` 디렉티브를 이용해 미리 모듈을 캐싱하도록 자동으로 변환합니다. 덕분에 해당 모듈을 필요로 하는 경우 이를 바로 사용할 수 있게 됩니다. (`modulepreload`에 대한 더 자세한 내용은 [MDN doc](https://developer.mozilla.org/en-US/docs/Web/HTML/Link_types/modulepreload) 또는 [Google developers](https://developers.google.com/web/updates/2017/12/modulepreload) 문서를 참고해주세요. - 옮긴이)
 
 ### Async Chunk Loading Optimization {#async-chunk-loading-optimization}
 
-빌드 시, 때때로 Rollup은 "공통(Common)" 청크 파일을 생성합니다. 보통 두 개 이상의 모듈에서 공유되는 청크가 이러한데, 이를 Dynamic Import를 이용해 불러오는 경우 다음과 같은 상황이 발생됩니다. (\* 브라우저는 `A`와 `B` 모듈을 필요로 하며(Dynamic Import), `A`와 `B` 모듈은 공통적으로 모듈 `C`를 필요로 하는 경우(Direct Import)입니다.)
+빌드 시, 때때로 Rollup은 "공통(Common)" 청크 파일을 생성합니다. 보통 두 개 이상의 모듈에서 공유되는 청크가 이러한데, 이를 Dynamic Import를 이용해 불러오는 경우 다음과 같은 상황이 발생됩니다. (브라우저는 `A`와 `B` 모듈을 필요로 하며(Dynamic Import), `A`와 `B` 모듈은 공통적으로 모듈 `C`를 필요로 하는 경우(Direct Import)입니다. - 옮긴이)
 
 <script setup>
 import graphSvg from '../images/graph.svg?raw'

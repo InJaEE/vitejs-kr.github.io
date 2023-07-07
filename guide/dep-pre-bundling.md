@@ -1,13 +1,6 @@
-# 사전 번들링 된 디펜던시 {#dependency-pre-building}
+# 사전 번들링 된 디펜던시 {#dependency-pre-bundling}
 
-맨 처음 `vite` 명령을 실행했을 때, 다음 메시지를 마주했을 것입니다.
-
-```
-Pre-bundling dependencies:
-  react
-  react-dom
-(this will be run only when your dependencies or config have changed)
-```
+처음 `vite`를 실행할 때, Vite는 로컬에 사이트를 불러오기 전에 프로젝트의 디펜던시를 사전 번들링합니다. 이는 기본적으로 자동으로 투명하게 진행됩니다.
 
 ## 왜 이런 메시지가 나타나나요? {#the-why}
 
@@ -36,7 +29,7 @@ Pre-bundling dependencies:
 
 만약 디펜던시가 캐시되지 않았다면 어떻게 될까요? vite는 프로젝트 내 모든 소스 코드를 탐색하여 디펜던시를 찾아낸 뒤, 사전 번들링을 이용해 Import 합니다(`node_modules`에서 디펜던시를 가져오듯이 말이죠). 물론, 이 사전 번들링 과정은 `esbuild`를 이용하기에 보통 매우 빠른 속도로 진행됩니다.
 
-서버가 이미 시작된 이후에 캐시되지 않은 새로운 디펜던시가 추가되는 경우라면, vite는 디펜던시 번들링 과정을 재시작하고 이후 해당 페이지를 다시 불러오게 됩니다.
+서버가 이미 시작된 이후에 캐시되지 않은 새로운 디펜던시가 추가되는 경우라면, vite는 디펜던시 번들링 과정을 재시작하고 이후 필요하다면 해당 페이지를 다시 불러오게 됩니다.
 
 ## 모노리포 디펜던시 {#monorepos-and-linked-dependencies}
 
@@ -65,11 +58,13 @@ export default defineConfig({
 
 ## 디펜던시 탐색 과정 커스터마이즈하기 {#customizing-the-behavior}
 
-기본적으로 Vite의 사전 번들링 될 디펜던시 탐색은 휴리스틱(Heuristics) 기반으로 이루어집니다. 물론 모든 상황에서 적절하게 동작할 것이라는 보장은 없죠. 만약 특정 디펜던시를 포함시키거나 포함시키지 않도록 설정하고자 한다면 [`optimizeDeps` 옵션](/config/dep-optimization-options.md)을 이용해주세요.
+Vite의 디펜던시 탐색 휴리스틱이 항상 바람직한 것은 아닙니다. 만약 특정 디펜던시를 명시적으로 포함시키거나 포함시키지 않도록 설정하고자 한다면 [`optimizeDeps` 옵션](/config/dep-optimization-options.md)을 이용해주세요.
 
-이 옵션은 일반적으로 소스 코드에서 바로 가져올 수 없는 파일에 대해 `optimizeDeps.include` 또는 `optimizeDeps.exclude`에 명시하는 방식으로 사용합니다. 플러그인을 통해 생성된 어떤 파일을 명시적으로 Import 하고자 하는 경우와 같이 말이죠. 다시말해 vite는 첫 번째 스캐닝 시 모든 디펜던시를 스캔하지 않으며, 오로지 브라우저가 요청했을 때에만 해당 디펜던시를 변환해 가져오는 방식으로 동작합닌다. 물론 서버가 이미 실행된 이후에도 말이죠.
+`optimizeDeps.include` 또는 `optimizeDeps.exclude`의 일반적인 사용 사례는 소스 코드에서 직접 탐색할 수 없는 Import가 있는 경우입니다. 플러그인 변환의 결과물에 Import가 사용된 경우를 예로 들 수 있습니다. 이는 Vite가 초기 스캔 시 해당 Import를 발견할 수 없음을 의미합니다. 브라우저에서 파일을 요청하고 변환된 이후에만 해당 Import를 발견할 수 있습니다. 이는 서버가 시작된 이후에 서버를 다시 번들링하게 만듭니다.
 
-`include`나 `exclude`를 사용하는 예시를 들어 볼까요? 만약 디펜던시가 매우 크거나, 많은 모듈을 포함하고 있거나, CommonJS 포맷으로 되어있는 경우 이 디펜던시들을 사전 번들링 과정에 포함시킬 수 있도록 `include` 옵션에 명시해야 합니다. 만약 디펜던시가 작거나, 이미 ESM 스타일로 작성된 경우라면 굳이 사전 번들링 과정에 포함시킬 필요가 없으니 `exclude` 옵션에 명시해 브라우저에서 바로 불러올 수 있도록 설정할 수도 있습니다.
+이를 해결하기 위해 `include`와 `exclude` 옵션 둘 다 사용될 수 있습니다. 만약 디펜던시가 크거나(내부 모듈이 많은 경우) CommonJS 포맷이라면 `include` 옵션에 명시해야 합니다. 만약 디펜던시가 작고 이미 ESM 스타일로 작성되어 있다면 `exclude` 옵션에 명시해 브라우저에서 바로 불러올 수 있도록 설정할 수 있습니다.
+
+또한 [`optimizeDeps.esbuildOptions` 옵션](/config/dep-optimization-options.md#optimizedeps-esbuildoptions)을 통해 esbuild를 더욱 세밀하게 커스터마이즈할 수 있습니다. 예를 들어, 특정 파일을 디펜던시에서 처리하기 위한 esbuild 플러그인을 추가하는 것 또한 이 옵션을 통해 가능합니다.
 
 ## 캐싱 {#caching}
 
@@ -77,9 +72,10 @@ export default defineConfig({
 
 Vite는 사전 번들링 된 디펜던시를 `node_modules/.vite` 디렉터리 내에 캐시하고 있습니다. 다만 이를 다시 번들링하는 경우가 있는데, 다음과 같습니다.
 
-- `package.json` 내 `dependencies` 리스트가 변경되었을 때
-- `package-lock.json`, `yarn.lock` 또는 `pnpm-lock.yaml` 파일과 같은 패키지 매니저의 Lock 파일이 변경되었을 때
+- 패키지 매니저의 락파일 내용, 예를 들어 `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml` 또는 `bun.lockb`
+- 폴더의 수정 시간을 패치
 - `vite.config.js`와 관련되어 있는 필드가 변경되었을 때
+- `NODE_ENV` 값
 
 위의 변경 사항이 발생된 경우 사전 번들링 과정을 다시 시작하게 됩니다.
 
@@ -87,7 +83,7 @@ Vite는 사전 번들링 된 디펜던시를 `node_modules/.vite` 디렉터리 �
 
 ### 브라우저 캐시 {#browser-cache}
 
-HTTP 헤더를 `max-age=31536000,immutable`과 같이 디펜던시가 반드시 캐시되도록 설정한 경우\*, 개발 시 페이지를 다시 불러올 때의 퍼포먼스를 향상시킬 수 있습니다. 한 번 캐시된 디펜던시는 다시 서버에 요청하지 않기 때문이죠. 물론 캐시된 디펜던시와 다른 버전이 설치된 경우, 기존 버전은 자동으로 무효화됩니다. 물론 아래의 과정을 통해 버전 변경 없이 직접 디펜던시를 수정(디버그)할 수도 있습니다. (\* 사전 번들링 된 디펜던시의 경우 이 헤더가 추가됩니다.)
+HTTP 헤더를 `max-age=31536000,immutable`(사전 번들링 된 디펜던시의 경우 이 헤더가 추가됩니다. - 옮긴이)과 같이 디펜던시가 반드시 캐시되도록 설정한 경우, 개발 시 페이지를 다시 불러올 때의 퍼포먼스를 향상시킬 수 있습니다. 한 번 캐시된 디펜던시는 다시 서버에 요청하지 않기 때문이죠. 물론 캐시된 디펜던시와 다른 버전이 설치된 경우, 기존 버전은 자동으로 무효화됩니다. 물론 아래의 과정을 통해 버전 변경 없이 직접 디펜던시를 수정(디버그)할 수도 있습니다.
 
 1. 브라우저의 개발자 도구를 이용해 캐시를 사용하지 않도록 설정합니다.
 2. 디펜던시를 다시 번들링하는 `--force` 옵션과 함께 Vite의 개발 서버를 재시작합니다.

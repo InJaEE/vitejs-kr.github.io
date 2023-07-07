@@ -58,14 +58,14 @@ TLS + HTTP/2를 활성화합니다. [`server.proxy`](./server-options#server-pro
 - **타입:** `boolean | string`
 - **기본값:** [`server.open`](./server-options#server-open)
 
-서버 시작 시 자동으로 브라우저를 열도록 설정할 수 있습니다. 값이 문자열인 경우 URL 경로를 의미하며, 원하는 특정 브라우저를 열고자 하는 경우에는 `process.env.BROWSER` 환경 변수를 `firefox`와 같은 값으로 설정합니다. 자세한 내용은 [`open` 패키지](https://github.com/sindresorhus/open#app)를 참고해주세요.
+서버 시작 시 자동으로 브라우저를 열도록 설정할 수 있습니다. 값이 문자열인 경우 URL 경로를 의미하며, 원하는 특정 브라우저를 열고자 하는 경우에는 `process.env.BROWSER` 환경 변수를 `firefox`와 같은 값으로 설정합니다. `process.env.BROWSER_ARGS` 환경 변수를 통해 추가적인 인자를 전달할 수도 있습니다. (예: `--incognito`)
 
 ## preview.proxy {#preview-proxy}
 
 - **타입:** `Record<string, string | ProxyOptions>`
 - **기본값:** [`server.proxy`](./server-options#server-proxy)
 
-프리뷰 서버에 대한 사용자 지정 프록시 규칙을 설정할 수 있습니다. `{ key: options }` 형태로 구성되며, 키값이 `^`로 시작하는 경우 `RegExp`로 해석됩니다. `configure` 옵션을 사용하여 프록시 인스턴스에 접근할 수 있습니다.
+프리뷰 서버에 대한 사용자 지정 프락시 규칙을 설정할 수 있습니다. `{ key: options }` 형태로 구성되며, 키값이 `^`로 시작하는 경우 `RegExp`로 해석됩니다. `configure` 옵션을 사용하여 프락시 인스턴스에 접근할 수 있습니다.
 
 이는 [`http-proxy`](https://github.com/http-party/node-http-proxy)를 사용하며, 더 많은 옵션은 [이 링크](https://github.com/http-party/node-http-proxy#options)를 참고해주세요.
 
@@ -74,7 +74,7 @@ TLS + HTTP/2를 활성화합니다. [`server.proxy`](./server-options#server-pro
 - **타입:** `boolean | CorsOptions`
 - **기본값:** [`server.cors`](./server-options#server-cors)
 
-프리뷰 서버에 대한 CORS를 구성합니다. 기본적으로 활성화 되어 있는 옵션이며, 모든 출처를 허용하고 있습니다. 이를 설정하기 위해서는 [옵션 객체](https://github.com/expressjs/cors)를 전달하고, 비활성화하고자 한다면 `false` 값으로 설정해주세요.
+프리뷰 서버에 대한 CORS를 구성합니다. 기본적으로 활성화 되어 있는 옵션이며, 모든 출처를 허용하고 있습니다. 이를 설정하기 위해서는 [옵션 객체](https://github.com/expressjs/cors#configuration-options)를 전달하고, 비활성화하고자 한다면 `false` 값으로 설정해주세요.
 
 ## preview.headers {#preview-headers}
 

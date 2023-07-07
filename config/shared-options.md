@@ -33,20 +33,20 @@
 
 ## define {#define}
 
-- **타입:** `Record<string, string>`
+- **타입:** `Record<string, any>`
 
-전역 상수 대체를 정의합니다. 진입점은 개발 중에는 전역으로 정의될 것이며, 빌드 시에는 정적으로 대체될 것입니다.
+전역 상수로 대체되는 값을 정의합니다. 정의된 내용들은 개발 중에는 전역으로 정의되나, 빌드 중에는 정적으로 대체됩니다.
 
-- `2.0.0-beta.70` 부터는, 문자열 값이 raw 표현으로 사용될 것이므로, 만약 문자열 상수를 정의한다면, 명시적으로 인용될 필요가 있습니다. (예: `JSON.stringify` 사용)
+- 문자열 값은 원시 표현식으로 사용되기에, 만약 문자열 상수를 정의하고자 한다면 **명시적으로 따옴표로 묶어야 합니다**. (예: `JSON.stringify` 사용)
 
 - [esbuild](https://esbuild.github.io/api/#define)와 일관성을 유지하기 위해, 표현식은 JSON 객체(null, boolean, number, string, array, 또는 object)이거나 단일 식별자여야 합니다.
 
 - 매치되는 부분이 다른 문자나 숫자, `_` 또는 `$`로 둘러싸여 있지 않은 경우에만 대체됩니다.
 
 ::: warning
-이것은 아무런 구문 분석 없이 간단한 텍스트 대체로 구현되므로, 상수에만 `define` 을 사용하는 것을 추천합니다.
+구분 분석 없이 간단한 텍스트 치환으로 구현되기에, 상수에만 `define`을 사용하는 것이 좋습니다.
 
-예를 들어, `process.env.FOO` 와 `__APP_VERSION__` 는 서로 잘 맞습니다. 하지만 `process` 또는 `global` 을 이 옵션에 넣어서는 안됩니다. 대신에 변수를 끼워넣거나 폴리필로 사용할 수 있습니다.
+예를 들어 `process.env.FOO` 및 `__APP_VERSION__`과 같은 값이 적절합니다. 그러나 `process` 또는 `global`을 이 옵션에 넣어서는 안 됩니다. 대신 변수를 끼워 넣거나 폴리필로 사용할 수 있습니다.
 :::
 
 ::: tip 참고
@@ -57,6 +57,20 @@ TypeScript를 사용할 때 타입 체크 및 인텔리센스를 활성화하고
 ```ts
 // vite-env.d.ts
 declare const __APP_VERSION__: string
+```
+
+:::
+
+::: tip 참고
+개발과 빌드는 `define`을 다르게 구현하기에, 일관성을 유지하기 위해 몇몇 사용 사례를 피해야 합니다.
+
+예제:
+
+```js
+const obj = {
+  __NAME__, // 객체 프로퍼티 축약 표현을 사용하지 마세요.
+  __KEY__: value, // 오브젝트 키로 사용하지 마세요.
+}
 ```
 
 :::
@@ -96,8 +110,8 @@ declare const __APP_VERSION__: string
 
 더 자세한 해결책은 [플러그인](/guide/api-plugin)에서 찾아볼 수 있습니다.
 
-::: warning Using with SSR
-If you have configured aliases for [SSR externalized dependencies](/guide/ssr.md#ssr-externals), you may want to alias the actual `node_modules` packages. Both [Yarn](https://classic.yarnpkg.com/en/docs/cli/add/#toc-yarn-add-alias) and [pnpm](https://pnpm.js.org/en/aliases) support aliasing via the `npm:` prefix.
+::: warning SSR 사용 시 주의사항
+[SSR 외부화된 디펜던시](/guide/ssr.md#ssr-externals)를 위해 별칭을 사용했다면, 기존의 실제 `node_modules` 패키지도 별칭으로 설정하는 것이 좋습니다. [Yarn](https://classic.yarnpkg.com/en/docs/cli/add/#toc-yarn-add-alias)과 [pnpm](https://pnpm.io/aliases/) 모두 `npm:` 접두사를 통해 별칭을 지원합니다.
 :::
 
 ## resolve.dedupe {#resolve-dedupe}
@@ -144,10 +158,20 @@ Vite 는 "허용되는 조건들"의 목록을 가지며 이것은 허용되는 
 
 패키지의 진입점을 확인할 때 시도할 `package.json`안의 필드 목록입니다. 이것은 `exports` 필드에서 처리되는 조건부 내보내기보다 우선순위가 낮습니다: 만약 진입점이 `exports`로부터 성공적으로 확인되면, 메인 필드는 무시될 것입니다.
 
+## resolve.browserField {#resolve-browserfield}
+
+- **타입:** `boolean`
+- **기본값:** `true`
+- **사용되지 않음**
+
+`package.json` 파일의 `browser` 필드를 사용할지 여부를 나타냅니다.
+
+향후 `resolve.mainFields`의 기본값은 `['browser', 'module', 'jsnext:main', 'jsnext']`가 될 것이며, 이 옵션은 제거됩니다.
+
 ## resolve.extensions {#resolve-extensions}
 
 - **타입:** `string[]`
-- **기본값:** `['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']`
+- **기본값:** `['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json']`
 
 확장자를 생략한 가져오기를 위해 시도할 파일 확장자 목록입니다. IDE와 타입 지원을 방해할 수 있으므로 (`.vue`와 같은) 사용자가 지정한 방식의 가져오기 형식에 대해서는 확장자를 생략하지 **않는** 것을 추천합니다.
 
@@ -184,7 +208,9 @@ interface CSSModulesOptions {
 }
 ```
 
-CSS 모듈 행동을 구성합니다. 옵션들은 [postcss-modules](https://github.com/css-modules/postcss-modules)로 전달됩니다.
+CSS 모듈에 대한 설정입니다. 옵션들은 [postcss-modules](https://github.com/css-modules/postcss-modules)로 전달됩니다.
+
+[Lightning CSS](../guide/features.md#lightning-css)를 사용할 때 이 옵션은 어떠한 효과도 없습니다. Lightning CSS가 활성화된 경우, [`css.lightningcss.cssModules`](https://lightningcss.dev/css-modules.html)를 이 대신 사용해야 합니다.
 
 ## css.postcss {#css-postcss}
 
@@ -202,17 +228,33 @@ CSS 모듈 행동을 구성합니다. 옵션들은 [postcss-modules](https://git
 
 - **타입:** `Record<string, object>`
 
-CSS 전처리기로 전달할 옵션을 지정합니다. 예제:
+CSS 전처리기에 전달할 옵션을 지정합니다. 파일 확장자는 옵션의 키로 사용됩니다. 전처리기에 대한 지원되는 옵션은 각각의 문서에서 찾을 수 있습니다:
+
+- `sass`/`scss` - [옵션](https://sass-lang.com/documentation/js-api/interfaces/LegacyStringOptions).
+- `less` - [옵션](https://lesscss.org/usage/#less-options).
+- `styl`/`stylus` - [`define`](https://stylus-lang.com/docs/js.html#define-name-node)만 지원되며, 객체로 전달할 수 있습니다.
+
+모든 전처리기 옵션은 `additionalData` 옵션을 지원하며, 각 스타일 내용에 추가 코드를 주입하는 데 사용할 수 있습니다. 참고로 변수가 아닌 실제 스타일을 포함한다면 최종 번들 결과에 중복되어 포함된다는 점에 유의하세요.
+
+예:
 
 ```js
 export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `$injectedColor: orange;`
-      }
-    }
-  }
+        additionalData: `$injectedColor: orange;`,
+      },
+      less: {
+        math: 'parens-division',
+      },
+      styl: {
+        define: {
+          $specialColor: new stylus.nodes.RGBA(51, 197, 255, 1),
+        },
+      },
+    },
+  },
 })
 ```
 
@@ -223,6 +265,46 @@ export default defineConfig({
 - **기본값:** `false`
 
 개발 중 CSS 소스 맵을 활성화할지 여부를 나타냅니다.
+
+## css.transformer {#css-transformer}
+
+- **실험적 기능**
+- **타입:** `'postcss' | 'lightningcss'`
+- **기본값:** `'postcss'`
+
+CSS 처리에 사용되는 엔진을 선택합니다. 자세한 내용은 [Lightning CSS](../guide/features.md#lightning-css)를 참고해 주세요.
+
+## css.lightningcss {#css-lightningcss}
+
+- **실험적 기능**
+- **타입:**
+
+```js
+import type {
+  CSSModulesConfig,
+  Drafts,
+  Features,
+  NonStandard,
+  PseudoClasses,
+  Targets,
+} from 'lightningcss'
+```
+
+```js
+{
+  targets?: Targets
+  include?: Features
+  exclude?: Features
+  drafts?: Drafts
+  nonStandard?: NonStandard
+  pseudoClasses?: PseudoClasses
+  unusedSymbols?: string[]
+  cssModules?: CSSModulesConfig,
+  // ...
+}
+```
+
+Lightning CSS 옵션입니다. 전체 변환 옵션은 [Lightning CSS 리포지토리](https://github.com/parcel-bundler/lightningcss/blob/master/node/index.d.ts)에서 찾을 수 있습니다.
 
 ## json.namedExports {#json-namedexports}
 
@@ -298,6 +380,40 @@ export default defineConfig({
 
 콘솔 출력의 상세 정도를 조정합니다. 기본값은 `'info'` 입니다.
 
+## customLogger {#customlogger}
+
+- **타입:**
+  ```ts
+  interface Logger {
+    info(msg: string, options?: LogOptions): void
+    warn(msg: string, options?: LogOptions): void
+    warnOnce(msg: string, options?: LogOptions): void
+    error(msg: string, options?: LogErrorOptions): void
+    clearScreen(type: LogType): void
+    hasErrorLogged(error: Error | RollupError): boolean
+    hasWarned: boolean
+  }
+  ```
+
+커스텀 로거를 사용하여 메시지를 로그로 남깁니다. `createLogger` API를 사용해 Vite의 로거를 가져와 메시지를 변경하거나 특정 경고를 필터링하는 등의 작업을 수행할 수 있습니다.
+
+```js
+import { createLogger, defineConfig } from 'vite'
+
+const logger = createLogger()
+const loggerWarn = logger.warn
+
+logger.warn = (msg, options) => {
+  // 빈 CSS 파일에 대한 경고 무시
+  if (msg.includes('vite:css') && msg.includes(' is empty')) return
+  loggerWarn(msg, options)
+}
+
+export default defineConfig({
+  customLogger: logger,
+})
+```
+
 ## clearScreen {#clearscreen}
 
 - **타입:** `boolean`
@@ -323,6 +439,15 @@ export default defineConfig({
 
 :::warning 보안 권고 사항
 `envPrefix`를 `''`로 설정해서는 안 됩니다. 이렇게 설정한 경우 모든 환경 변수가 노출되며, 이로 인해 예기치 않게 민감한 정보가 누출될 수 있습니다. 따라서 Vite는 `''`로 설정되었을 때 오류를 발생시킵니다.
+
+접두사가 붙지 않은 변수를 노출하려면, 이 대신 [define](#define) 옵션을 사용하세요:
+
+```js
+define: {
+  'import.meta.env.ENV_VARIABLE': JSON.stringify(process.env.ENV_VARIABLE)
+}
+```
+
 :::
 
 ## appType {#apptype}
@@ -332,8 +457,8 @@ export default defineConfig({
 
 애플리케이션이 단일 페이지 애플리케이션(SPA), [다중 페이지 애플리케이션(MPA)](../guide/build#multi-page-app), 또는 커스텀 애플리케이션(SSR 및 커스텀 HTML 처리를 하는 프레임워크)인지 여부:
 
-- `'spa'`: SPA 폴백(Fallback) 미들웨어를 포함하며, 프리뷰 모드에서 `single: true`로 [sirv](https://github.com/lukeed/sirv)를 설정합니다.
-- `'mpa'`: SPA가 아닌 HTML 미들웨어만을 포함합니다.
+- `'spa'`: HTML 미들웨어와 SPA 폴백(Fallback)을 사용합니다. 프리뷰 모드에서 `single: true`로 [sirv](https://github.com/lukeed/sirv)를 설정합니다.
+- `'mpa'`: HTML 미들웨어를 포함합니다.
 - `'custom'`: HTML 미들웨어를 포함하지 않습니다.
 
 좀 더 많은 정보가 필요하다면 Vite의 [SSR 가이드](/guide/ssr#vite-cli)를 참고해주세요. [`server.middlewareMode`](./server-options#server-middlewaremode) 옵션도 참고가 가능합니다.

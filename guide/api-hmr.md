@@ -29,8 +29,9 @@ interface ViteHotContext {
   ): void
 
   dispose(cb: (data: any) => void): void
+  prune(cb: (data: any) => void): void
   decline(): void
-  invalidate(): void
+  invalidate(message?: string): void
 
   // `InferCustomEventPayload`는 내장된(Built-in) Vite 이벤트에 대한 타입을 제공합니다
   on<T extends string>(
@@ -51,9 +52,17 @@ if (import.meta.hot) {
 }
 ```
 
+## IntelliSense for TypeScript {#intellisense-for-typescript}
+
+Vite는 [`vite/client.d.ts`](https://github.com/vitejs/vite/blob/main/packages/vite/client.d.ts)을 통해 `import.meta.hot`에 대한 타입 정의를 제공하고 있습니다. `src` 디렉터리 아래에 `env.d.ts`를 생성해 TypeScript가 타입 정의를 찾을 수 있도록 할 수 있습니다:
+
+```ts
+/// <reference types="vite/client" />
+```
+
 ## `hot.accept(cb)` {#hot-accept-cb}
 
-스스로 수용하는 모듈을 위해 변경된 모듈을 인자로 받는 콜백과 함께 `import.meta.hot.accpet`를 사용하세요:
+모듈 자신에 대한 HMR을 확인하기 위해서는 `import.meta.hot.accept`를 사용하고 업데이트된 모듈을 받는 콜백을 전달합니다:
 
 ```js
 export const count = 1
@@ -68,15 +77,15 @@ if (import.meta.hot) {
 }
 ```
 
-Hot updates를 "수용한" 모듈은 **HMR 범위**로 간주됩니다.
+이렇게 Hot updates를 "허용한" 모듈은 **HMR 범위**로 간주됩니다.
 
-Vite은 처음에 불러온 모듈을 교환하지 않습니다: 만약에 HMR 범위의 모듈이 디펜던시로부터 imports를 다시 exports 한다면, 해당 re-exports를 업데이트할 책임이 있습니다 (그리고 그러한 exports는 `let`을 사용하였을 것입니다). 게다가 경계 모듈에서 체인 위에 있는 importers에게는 변화가 되었다고 알리지 않습니다.
+Vite의 HMR은 처음에 불러온 모듈을 교체하지 않습니다: 만약에 HMR 범위의 모듈이 디펜던시로부터 imports를 다시 exports 한다면, 해당 re-exports를 업데이트할 책임이 있습니다 (그리고 그러한 exports는 `let`을 사용했을 것입니다). 또한, 경계 모듈에서 체인 위에 있는 importers에게는 변화가 되었다고 알리지 않습니다. 이렇게 간소화된 HMR 구현은 대부분의 개발 환경에서 충분하며, 프락시 모듈을 생성하는 것과 같이 비용이 큰 작업을 생략할 수 있도록 합니다.
 
-Vite의 간소화된 HMR 기능은 프록시 모듈을 생산하는 것과 같은 비용이 큰일을 하지 않고서 대부분의 개발 환경에서 충분합니다.
+모듈이 업데이트를 수락하고자 한다면, 이 함수에 대한 호출이 소스 코드에서 `import.meta.hot.accept(` (공백 구분)로 나타나야 합니다. 이는 Vite가 HMR 범위를 추적할 수 있도록 합니다.
 
 ## `hot.accept(deps, cb)` {#hot-accept-deps-cb}
 
-모듈은 스스로 리로딩을 하지 않고 직접적인 의존성으로 변경을 수용할 수 있습니다:
+모듈은 자체적으로 리로딩을 하지 않고 직접적인 의존성으로 변경을 수락할 수 있습니다:
 
 ```js
 import { foo } from './foo.js'
@@ -93,7 +102,8 @@ if (import.meta.hot) {
   import.meta.hot.accept(
     ['./foo.js', './bar.js'],
     ([newFooModule, newBarModule]) => {
-      // 콜백으로 변경된 모듈들을 어레이로 받을 수 있습니다.
+      // 콜백은 null이 아닌 값을 갖는 업데이트된 모듈에 대한 배열을 전달받습니다.
+      // 구문 오류와 같이 만약 업데이트가 성공하지 않았다면 배열은 비어있습니다.
     }
   )
 }
@@ -101,7 +111,7 @@ if (import.meta.hot) {
 
 ## `hot.dispose(cb)` {#hot-dispose-cb}
 
-스스로 수용하는 모듈 혹은 다른 것에 의해 수용될 모듈은 변경된 복사본으로 인한 지속적인 부작용을 정리하기 위해 `hot.dispose`를 사용할 수 있습니다:
+자체적으로 업데이트를 수락하는 모듈 혹은 다른 변경 사항에 의해 수락될 모듈은 변경된 복사본으로 인한 지속적인 사이드 이펙트를 정리하기 위해 `hot.dispose`를 사용할 수 있습니다:
 
 ```js
 function setupSideEffect() {}
@@ -115,17 +125,44 @@ if (import.meta.hot) {
 }
 ```
 
+## `hot.prune(cb)` {#hot-prune-cb}
+
+모듈이 페이지에서 더 이상 import 되지 않을 때 호출되는 콜백을 등록합니다. `hot.dispose`와 비교했을 때, 소스 코드 업데이트 시 자체적으로 또는 페이지에서 제거될 때 사이드 이펙트를 정리하는 경우 사용할 수 있습니다. Vite는 현재 `.css` import에 대해 이를 사용하고 있습니다.
+
+```js
+function setupOrReuseSideEffect() {}
+
+setupOrReuseSideEffect()
+
+if (import.meta.hot) {
+  import.meta.hot.prune((data) => {
+    // 사이드 이펙트를 정리
+  })
+}
+```
+
 ## `hot.data` {#hot-data}
 
 `import.meta.hot.data` 객체는 같이 변경된 각기 다른 모듈들의 인스턴스들에서 지속됩니다. 해당 객체는 전 버전의 모듈 정보를 다음 버전의 모듈에게 전달할 수 있습니다.
 
 ## `hot.decline()` {#hot-decline}
 
-`import.meta.hot.decline()`은 해당 모듈이 hot-업데이트가 불가능함을 가리키고 만약 이 모듈이 변경이 되어야 한다면 브라우저 전체 리로드가 실행이 되어야 함을 알려줍니다. 
+이는 현재 무시되고 있으며, 이전 버전과의 호환성을 위해 존재합니다. 만약 새로운 사용법이 생긴다면, 이는 변경될 수 있습니다. 모듈이 Hot 업데이트가 불가능함을 알리기 위해서는 `hot.invalidate()`를 사용하세요.
 
-## `hot.invalidate()` {#hot-invalidate}
+## `hot.invalidate(message?: string)` {#hot-invalidate-message-string}
 
-`import.meta.hot.invalidate()`를 호출하면 페이지가 리로드가 됩니다.
+실행 중인 자체 수용 모듈(self-accepting module)은 HMR 업데이트를 처리할 수 없음을 인지할 수 있고, 이에 따라 업데이트를 강제로 가져오는(importers) 모듈에 전파되어야 합니다. `import.meta.hot.invalidate()`를 호출함으로써 HMR 서버는 호출자의 가져오기(importers)를 무효화하며, 마치 호출자가 자체 수용 모듈이 아닌 것처럼 처리됩니다. 이 결과, 브라우저 콘솔과 터미널에 메시지가 기록됩니다. 무효화가 발생한 이유에 대한 문맥을 제공하기 위해 메시지를 전달할 수 있습니다.
+
+자체 수용 모듈에 대한 향후 변경 사항을 수신하려면 항상 `import.meta.hot.accept`를 호출해야 하며, 그 직후에 `invalidate`를 호출할 계획이라도 이 작업을 수행해야 합니다. 의도를 명확하게 전달하기 위해, 다음과 같이 `accept` 콜백 내에서 `invalidate`를 호출하는 것이 좋습니다:
+
+```js
+import.meta.hot.accept(module => {
+  // 새로운 모듈 인스턴스를 사용하여 무효화할지 결정할 수 있습니다.
+  if (cannotHandleUpdate(module)) {
+    import.meta.hot.invalidate()
+  }
+})
+```
 
 ## `hot.on(event, cb)` {#hot-on-event-cb}
 
@@ -133,10 +170,14 @@ HMR 이벤트에 대한 핸들러를 정의합니다.
 
 다음 HMR 이벤트들은 Vite에서 자동적으로 호출됩니다:
 
-- `'vite:beforeUpdate'`은 변경이 적용되기 전에 호출됩니다. (e.g. 모듈이 변경될 예정일 때)
-- `'vite:beforeFullReload'`은 전체 리로드가 일어나기 전에 호출됩니다.
+- `'vite:beforeUpdate'`는 변경이 적용되기 전에 호출됩니다. (e.g. 모듈이 변경될 예정일 때)
+- `'vite:afterUpdate'`는 변경이 적용된 후에 호출됩니다. (e.g. 모듈이 변경된 후)
+- `'vite:beforeFullReload'`는 전체 리로드가 일어나기 전에 호출됩니다.
 - `'vite:beforePrune'`은 모듈들이 필요가 없어져서 제거될 때 호출됩니다.
-- `'vite:error'`은 에러가 일어났을 때 호출됩니다. (e.g. syntax error)
+- `'vite:invalidate'`는 모듈이 `import.meta.hot.invalidate()`로 무효화될 때 호출됩니다.
+- `'vite:error'`는 에러가 일어났을 때 호출됩니다. (e.g. 구문 오류)
+- `'vite:ws:disconnect'`는 WebSocket 연결이 끊어졌을 때 호출됩니다.
+- `'vite:ws:connect'`는 WebSocket 연결이 (다시)설정되었을 때 호출됩니다.
 
 플러그인들로부터 새로운 HMR 이벤트들을 보낼 수 있습니다. 더 많은 정보는 [handleHotUpdate](./api-plugin#handlehotupdate)를 참고해 주세요.
 

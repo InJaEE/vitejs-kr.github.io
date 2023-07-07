@@ -4,18 +4,16 @@
 
 ## 브라우저 지원 현황 {#browser-compatibility}
 
-빌드된 프로덕션 버전의 경우 모던 JavaScript를 지원하는 브라우저에서 동작한다고 가정합니다.
-
-빌드된 프로덕션 버전은 모던 JavaScript를 지원하는 환경에서 동작한다고 가정합니다. 따라서 Vite는 기본적으로 [네이티브 ES 모듈](https://caniuse.com/es6-module), [네이티브 ESM의 동적 Import](https://caniuse.com/es6-module-dynamic-import), 그리고 [`import.meta`](https://caniuse.com/mdn-javascript_statements_import_meta)를 지원하는 브라우저를 타깃으로 하고 있습니다:
+빌드된 프로덕션 번들은 모던 JavaScript를 지원하는 환경에서 동작한다고 가정합니다. 따라서 Vite는 기본적으로 [네이티브 ES 모듈](https://caniuse.com/es6-module), [네이티브 ESM의 동적 Import](https://caniuse.com/es6-module-dynamic-import), 그리고 [`import.meta`](https://caniuse.com/mdn-javascript_statements_import_meta)를 지원하는 브라우저를 타깃으로 하고 있습니다:
 
 - Chrome >=87
 - Firefox >=78
-- Safari >=13
+- Safari >=14
 - Edge >=88
 
 만약 JavaScript 타깃을 지정하고자 한다면, [`build.target` 설정](/config/build-options.md#build-target)을 이용해주세요. 다만 버전은 최소한 `es2015` 이상이어야 합니다.
 
-위에서 언급되는 *'기본적으로'* 라는 말의 의미를 잠깐 설명하자면, Vite는 오로지 구분 변환만 진행할 뿐 **폴리필을 다루지 않는다는 말** 입니다. 따라서 만약 폴리필을 생각해야 할 경우, User Agent를 기반으로 자동으로 폴리필 번들을 생성해주는 [Polyfill.io](https://polyfill.io/v3/)를 이용해주세요.
+위에서 언급되는 기본적으로 라는 말의 의미를 잠깐 설명하자면, Vite는 오로지 구분 변환만 진행할 뿐 **기본적으로 폴리필을 다루지 않는다는 말** 입니다. 따라서 만약 폴리필을 생각해야 할 경우, User Agent를 기반으로 자동으로 폴리필 번들을 생성해주는 [Polyfill.io](https://polyfill.io/v3/)를 이용해주세요.
 
 레거시 브라우저의 경우 [@vitejs/plugin-legacy](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy) 플러그인을 이용할 수 있습니다. 이 플러그인을 사용하면 자동으로 레거시 버전에 대한 청크를 생성하게 되고, 이를 통해 레거시 브라우저 또한 Vite으로 빌드된 앱을 이용할 수 있게 됩니다. 참고로, 생성된 레거시 청크는 브라우저가 ESM을 지원하지 않는 경우에만 불러오게 됩니다.
 
@@ -33,14 +31,14 @@ JS(`import`), CSS(`url()`), 그리고 `.html` 파일에서 참조되는 에셋 �
 
 ## 빌드 커스터마이즈하기 {#customizing-the-build}
 
-빌드와 관련된 커스터마이즈는 [build 설정](/config/build-options.md)을 통해 가능합니다. 특별히 알아두어야 할 것이 하나 있는데, [Rollup 옵션](https://rollupjs.org/guide/en/#big-list-of-options)을 `build.rollupOptions`에 명시해 사용이 가능합니다.
+빌드와 관련된 커스터마이즈는 [build 설정](/config/build-options.md)을 통해 가능합니다. 특별히 알아두어야 할 것이 하나 있는데, [Rollup 옵션](https://rollupjs.org/configuration-options/)을 `build.rollupOptions`에 명시해 사용이 가능합니다.
 
 ```ts
 // vite.config.js
 export default defineConfig({
   build: {
     rollupOptions: {
-      // https://rollupjs.org/guide/en/#big-list-of-options
+      // https://rollupjs.org/configuration-options/
     }
   }
 })
@@ -50,7 +48,7 @@ export default defineConfig({
 
 ## 청크를 만드는 방식 {#chunking-strategy}
 
-`build.rollupOptions.output.manualChunks`를 사용해 청크를 분할하는 방식을 구성할 수 있습니다(자세한 사항은 [Rollup 문서](https://rollupjs.org/guide/en/#outputmanualchunks)를 참고해주세요). Vite 2.8 까지는 청크를 만들 때 기본적으로 `index`와 `vendor`를 기준으로 분할했습니다. 이 방식은 일부 SPA를 대상으로는 잘 동작했으나, Vite가 지원하고자 하는 모든 사례에 대해서 범용적으로 적용하기는 어려웠습니다. 따라서 Vite 2.9부터 `manualChunks`는 더 이상 기본적으로 수정하지 않습니다. 만약 계속 `manualChunks`를 수정하기 원한다면 `splitVendorChunkPlugin`을 사용해주세요.
+`build.rollupOptions.output.manualChunks`를 사용해 청크를 분할하는 방식을 구성할 수 있습니다(자세한 사항은 [Rollup 문서](https://rollupjs.org/configuration-options/#output-manualchunks)를 참고해주세요). Vite 2.8 까지는 청크를 만들 때 기본적으로 `index`와 `vendor`를 기준으로 분할했습니다. 이 방식은 일부 SPA를 대상으로는 잘 동작했으나, Vite가 지원하고자 하는 모든 사례에 대해서 범용적으로 적용하기는 어려웠습니다. 따라서 Vite 2.9부터 `manualChunks`는 더 이상 기본적으로 수정하지 않습니다. 만약 계속 `manualChunks`를 수정하기 원한다면 `splitVendorChunkPlugin`을 사용해주세요.
 
 ```js
 // vite.config.js
@@ -62,16 +60,20 @@ export default defineConfig({
 
 이러한 방식은 사용자 정의 로직을 사용한 구성이 필요한 경우를 대비해 `splitVendorChunk({ cache: SplitVendorChunkCache })` 팩토리 함수로도 제공됩니다. 이 때, 빌드 감시 모드가 정상적으로 작동하기 위해서는 `cache.reset()`을 `buildStart` 훅에서 호출해야 합니다.
 
+::: warning
+이 플러그인을 사용할 때는 `build.rollupOptions.output.manualChunks` 설정의 함수 형태로 사용해야 합니다. 객체 형태로 사용할 경우, 플러그인이 아무런 효과를 내지 못합니다. (`output.manualChunks` 옵션은 Rollup에서 [함수와 객체 두 가지 형태를 지원](https://rollupjs.org/configuration-options/#output-manualchunks)합니다. Vite는 이 중 [함수 형태만을 지원](https://github.com/vitejs/vite/pull/13431/files#diff-bb20feac020e4628912d91c673ef1c4fef4ffd1ae5241a7af1842dd1e1bbaec9R111)합니다. - 옮긴이)
+:::
+
 ## 파일 변경 시 다시 빌드하기 {#rebuild-on-files-changes}
 
-`vite build --watch` 명령을 통해 Rollup Watcher를 활성화 할 수 있습니다. 또는, `build.watch` 옵션에서 [`WatcherOptions`](https://rollupjs.org/guide/en/#watch-options)를 직접 명시할 수도 있습니다.
+`vite build --watch` 명령을 통해 Rollup Watcher를 활성화 할 수 있습니다. 또는, `build.watch` 옵션에서 [`WatcherOptions`](https://rollupjs.org/configuration-options/#watch)를 직접 명시할 수도 있습니다.
 
 ```ts
 // vite.config.js
 export default defineConfig({
   build: {
     watch: {
-      // https://rollupjs.org/guide/en/#watch-options
+      // https://rollupjs.org/configuration-options/#watch
     }
   }
 })
@@ -113,6 +115,10 @@ export default defineConfig({
   }
 })
 ```
+
+참고로 루트를 변경한다 해도 `__dirname`은 여전히 `vite.config.js` 파일이 위치한 폴더를 가리키고 있다는 것을 유의하세요. 이를 방지하고자 한다면 `resolve`의 인자로 `root` 엔트리를 함께 전달해 줘야 합니다.
+
+HTML 파일의 경우, Vite는 `rollupOptions.input` 객체에 명시된 엔트리의 이름을 무시하고, 대신 dist 폴더에 HTML 에셋을 생성할 때 확인할 수 있는 파일의 id를 사용합니다. 이는 개발 서버가 작동하는 방식과 일관성을 유지할 수 있도록 합니다.
 
 ## 라이브러리 모드 {#library-mode}
 
@@ -184,12 +190,34 @@ dist/my-lib.umd.cjs 0.30 KiB / gzip: 0.16 KiB
 }
 ```
 
+여러 진입점을 노출하는 경우는 아래와 같습니다:
+
+```json
+{
+  "name": "my-lib",
+  "type": "module",
+  "files": ["dist"],
+  "main": "./dist/my-lib.cjs",
+  "module": "./dist/my-lib.js",
+  "exports": {
+    ".": {
+      "import": "./dist/my-lib.js",
+      "require": "./dist/my-lib.cjs"
+    },
+    "./secondary": {
+      "import": "./dist/secondary.js",
+      "require": "./dist/secondary.cjs"
+    }
+  }
+}
+```
+
 ::: tip 참고
 `package.json`에 `"type": "module"`이 명시되어 있지 않으면 Vite는 Node.js 호환성을 위해 다른 파일 확장자를 생성합니다. 즉, `.js`는 `.mjs`가 되고, `.cjs`는 `.js`가 됩니다.
 :::
 
 ::: tip 환경 변수
-라이브러리 모드에서 모든 `import.meta.env.*`는 프로덕션용으로 빌드 시 정적으로 대체됩니다. 그러나 `process.env.*`는 그렇지 않기에 라이브러리를 사용하는 측에서 이를 동적으로 변경할 수 있습니다. 만약 이 역시 정적으로 대체되길 원한다면 `define: { 'process.env.`<wbr>`NODE_ENV': '"production"' }` 와 같이 설정해주세요.
+라이브러리 모드에서 모든 `import.meta.env.*`는 프로덕션용으로 빌드 시 정적으로 대체됩니다. 그러나 `process.env.*`는 그렇지 않기에 라이브러리를 사용하는 측에서 이를 동적으로 변경할 수 있습니다. 만약 이 역시 정적으로 대체되길 원한다면 `define: { 'process.env.NODE_ENV': '"production"' }` 와 같이 설정해주세요.
 :::
 
 ## Base 옵션 상세 설정 {#advanced-base-options}
